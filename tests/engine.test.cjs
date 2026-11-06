@@ -9,6 +9,24 @@ test('accepts a two-channel subset and rejects duplicate paths', () => {
   assert.throws(() => selectedChannels({ L: { path: '/a.fit' } }), /mindestens zwei/);
 });
 
+test('accepts mixed file and loaded view sources per channel', () => {
+  const selected = selectedChannels({
+    L: { source: 'view', viewId: 'Lum', path: '/ignored.fit' },
+    R: { source: 'file', path: '/r.fit' },
+  });
+  assert.deepEqual(selected.map(x => [x.id, x.source, x.viewId || x.path]), [
+    ['L', 'view', 'Lum'], ['R', 'file', '/r.fit'],
+  ]);
+  assert.throws(() => selectedChannels({
+    L: { source: 'view', viewId: 'Lum' },
+    B: { source: 'view', viewId: 'Lum' },
+  }), /Ansicht.*mehreren/);
+  assert.throws(() => selectedChannels({
+    L: { source: 'view', viewId: 'Lum' },
+    B: { source: 'unknown', path: '/b.fit' },
+  }), /Quelltyp/);
+});
+
 test('normalizes explicit native sampling and rejects missing sampling', () => {
   assert.equal(samplingKey('2 × 2'), '2x2');
   assert.equal(samplingKey('1,5x1,5'), '1.5x1.5');

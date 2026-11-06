@@ -21,6 +21,7 @@ class SlumDialog extends Dialog {
       var intro = new Label(this);
       intro.useRichText = true;
       intro.text = "<b>SLUM aus 2–4 linearen Monochrom-Mastern</b><br/>" +
+         "Je Kanal eine Datei oder eine geöffnete Hauptansicht wählen. " +
          "Alle Eingaben müssen registriert, gleich beschnitten und gradientenkorrigiert sein.";
       main.add(intro);
 
@@ -48,6 +49,7 @@ class SlumDialog extends Dialog {
          this.refreshSummary();
       };
       outRow.add(outBrowse);
+      this.outputBrowse = outBrowse;
       main.add(outRow);
 
       var refRow = new HorizontalSizer;
@@ -106,7 +108,7 @@ class SlumDialog extends Dialog {
       this.report = new TextBox(this);
       this.report.readOnly = true;
       this.report.minHeight = 260;
-      this.report.text = "Dateien wählen und Analysieren starten. Danach Referenz, Sampling und Gewichte prüfen.";
+      this.report.text = "Dateien oder geöffnete Ansichten wählen und Analysieren starten. Danach Referenz, Sampling und Gewichte prüfen.";
       main.add(this.report, 100);
       this.status = new Label(this);
       this.status.text = "Bereit";
@@ -145,9 +147,20 @@ class SlumDialog extends Dialog {
       label.text = id;
       label.minWidth = 60;
       row.add(label);
+      var source = new ComboBox(this);
+      source.addItem("Datei");
+      source.addItem("Ansicht");
+      source.currentItem = 0;
+      source.toolTip = "Quelle für Kanal " + id + " wählen.";
+      row.add(source);
       var path = new Edit(this);
       path.toolTip = id + "-Master (FITS oder XISF)";
-      path.onTextUpdated = () => this.invalidate();
+      path.onTextUpdated = () => {
+         if (source.currentItem === 0 && !this.suppress) {
+            this.invalidate();
+            sampling.text = "";
+         }
+      };
       row.add(path, 100);
       var browse = new PushButton(this);
       browse.text = "Wählen…";
@@ -158,6 +171,39 @@ class SlumDialog extends Dialog {
          if (dialog.execute()) path.text = dialog.filePath;
       };
       row.add(browse);
+      var viewList = new ViewList(this);
+      viewList.toolTip = "Bereits geöffnete PixInsight-Hauptansicht für " + id + ".";
+      viewList.getMainViews();
+      viewList.visible = false;
+      viewList.onViewSelected = () => {
+         if (source.currentItem === 1 && !this.suppress) {
+            this.invalidate();
+            sampling.text = "";
+         }
+      };
+      row.add(viewList, 100);
+      var refresh = new PushButton(this);
+      refresh.text = "↻";
+      refresh.toolTip = "Liste nach neu geöffneten Ansichten aktualisieren.";
+      refresh.visible = false;
+      refresh.onClick = () => {
+         var previous = viewList.currentView;
+         var previousId = previous && !previous.isNull ? previous.id : "";
+         this.suppress = true;
+         viewList.getMainViews();
+         if (previousId) {
+            var current = View.viewById(previousId);
+            if (current && !current.isNull) viewList.currentView = current;
+         }
+         this.suppress = false;
+         var chosen = viewList.currentView;
+         var chosenId = chosen && !chosen.isNull ? chosen.id : "";
+         if (source.currentItem === 1 && chosenId !== previousId) {
+            this.invalidate();
+            sampling.text = "";
+         }
+      };
+      row.add(refresh);
       var samplingLabel = new Label(this);
       samplingLabel.text = "Sampling";
       row.add(samplingLabel);
@@ -167,14 +213,53 @@ class SlumDialog extends Dialog {
       sampling.onTextUpdated = () => this.refreshGroups();
       row.add(sampling);
       main.add(row);
-      this.channels[id] = { path: path, sampling: sampling };
+      source.onItemSelected = index => {
+         var isView = index === 1;
+         this.invalidate();
+         path.visible = !isView;
+         browse.visible = !isView;
+         viewList.visible = isView;
+         refresh.visible = isView;
+         if (isView) {
+            this.suppress = true;
+            viewList.getMainViews();
+            this.suppress = false;
+         }
+         sampling.text = "";
+         this.adjustToContents();
+      };
+      this.channels[id] = { source: source, path: path, browse: browse,
+         viewList: viewList, refresh: refresh, sampling: sampling };
+   }
+
+   setInputsEnabled(enabled) {
+      ["L", "R", "G", "B"].forEach(id => {
+         var row = this.channels[id];
+         row.source.enabled = enabled;
+         row.path.enabled = enabled;
+         row.browse.enabled = enabled;
+         row.viewList.enabled = enabled;
+         row.refresh.enabled = enabled;
+         row.sampling.enabled = enabled;
+      });
+      this.outputEdit.enabled = enabled;
+      this.outputBrowse.enabled = enabled;
+      this.prerequisite.enabled = enabled;
+      this.registration.enabled = enabled;
+      for (var i = 0; i < this.shareRows.length; ++i)
+         this.shareRows[i].edit.enabled = enabled;
    }
 
    config() {
       var config = {};
       ["L", "R", "G", "B"].forEach(id => {
-         config[id] = { path: this.channels[id].path.text,
-            sampling: this.channels[id].sampling.text };
+         var controls = this.channels[id];
+         var isView = controls.source.currentItem === 1;
+         var view = controls.viewList.currentView;
+         config[id] = { source: isView ? "view" : "file",
+            path: controls.path.text,
+            viewId: isView && view && !view.isNull ? view.id : "",
+            sampling: controls.sampling.text };
       });
       return config;
    }
@@ -198,6 +283,7 @@ class SlumDialog extends Dialog {
       this.saveButton.enabled = false;
       this.analyzeButton.enabled = false;
       this.referenceCombo.enabled = false;
+      this.setInputsEnabled(false);
       this.status.text = "Analysiere Bilder und LinearFit…";
       processEvents();
       try {
@@ -230,6 +316,7 @@ class SlumDialog extends Dialog {
       } finally {
          this.busy = false;
          this.analyzeButton.enabled = true;
+         this.setInputsEnabled(true);
          if (this.analyzed) this.refreshSummary();
          if (this.closeAfterCancel) { this.session.close(); this.cancel(); }
       }
@@ -293,7 +380,7 @@ class SlumDialog extends Dialog {
          sampling[row.id] = this.channels[row.id].sampling.text;
          var warningText = countWarning(row.countPercent);
          var warning = warningText ? "  " + warningText : "";
-         lines.push(row.id + "  " + row.path);
+         lines.push(row.id + "  " + row.sourceLabel);
          lines.push("   Sampling " + sampling[row.id] + " (Header: " +
             (row.detectedSampling || "unbekannt") + ")  Median " +
             row.median.toPrecision(7) + "  Noise " + row.noise.toPrecision(7) +
@@ -334,6 +421,7 @@ class SlumDialog extends Dialog {
       this.closeAfterCancel = false;
       this.saveButton.enabled = false;
       this.analyzeButton.enabled = false;
+      this.setInputsEnabled(false);
       this.status.text = "Erzeuge SLUM…";
       processEvents();
       try {
@@ -359,6 +447,7 @@ class SlumDialog extends Dialog {
       } finally {
          this.busy = false;
          this.analyzeButton.enabled = true;
+         this.setInputsEnabled(true);
          if (this.closeAfterCancel) this.cancel();
       }
    }
