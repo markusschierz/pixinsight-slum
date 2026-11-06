@@ -29,6 +29,7 @@ test('accepts mixed file and loaded view sources per channel', () => {
 
 test('normalizes explicit native sampling and rejects missing sampling', () => {
   assert.equal(samplingKey('2 × 2'), '2x2');
+  assert.equal(samplingKey('3x3'), '3x3');
   assert.equal(samplingKey('1,5x1,5'), '1.5x1.5');
   assert.throws(() => samplingKey(''), /Sampling/);
   assert.throws(() => samplingKey('0x2'), /positiv/);

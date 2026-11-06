@@ -3,6 +3,7 @@
 #include "../src/slum-stats.js"
 #include "../src/slum-spfc.js"
 #include "../src/slum-engine.js"
+#include "../src/slum-ui.js"
 let report = new File;
 report.createForWriting("/tmp/pjsr-mixed-probe.txt");
 let ids=["L","R","G","B"];
@@ -17,8 +18,8 @@ function makeFile(id,index){
       window.mainView.image.setSample(0.02+index*0.002+
          ((x*(1973+index*13)+y*(9277+index*23))%1000)/1000000,x,y);
    window.mainView.endProcess();
-   window.keywords=[new FITSKeyword("XBINNING",id==="L"?"1":"2"),
-      new FITSKeyword("YBINNING",id==="L"?"1":"2")];
+   window.keywords=[new FITSKeyword("XBINNING",id==="L"?"2":"3"),
+      new FITSKeyword("YBINNING",id==="L"?"2":"3")];
    if(!window.saveAs(path,false,false,true,true))throw new Error("test input save failed");
    window.forceClose();
    return path;
@@ -30,7 +31,7 @@ try{
    for(let i=0;i<ids.length;++i)config[ids[i]]={path:makeFile(ids[i],i)};
    let rows=session.analyze(config);
    session.selectMethod("linearFit");
-   let sampling={L:"1x1",R:"2x2",G:"2x2",B:"2x2"};
+   let sampling={L:"2x2",R:"3x3",G:"3x3",B:"3x3"};
    session.setLuminanceFraction(0.6);
    session.prepare();
    let weights=session.weights(sampling,null);
@@ -48,6 +49,22 @@ try{
    report.outTextLn("pixelDifference="+
       Math.abs(expected-result.mainView.image.sample(40,60)));
    result.forceClose();
+   let dialog=new SlumDialog;
+   for(let id of ids)dialog.channels[id].path.text=root+id+".xisf";
+   dialog.outputMode.currentItem=1;
+   dialog.outputModeChanged();
+   dialog.analyze("");
+   dialog.methodCombo.currentItem=2;
+   dialog.methodCombo.onItemSelected(2);
+   dialog.prerequisite.checked=true;
+   dialog.registration.checked=true;
+   dialog.refreshSummary();
+   report.outTextLn("bin3Groups="+dialog.groupNames.join(",")+
+      " noGroupShare="+(dialog.shares()===null)+
+      " hint="+dialog.lShareHint.text+
+      " ready="+dialog.saveButton.enabled);
+   dialog.render().save("/tmp/pjsr-bin3-ui-probe.png");
+   dialog.session.close();
 }catch(e){report.outTextLn("ERROR="+String(e)+" STACK="+e.stack)}
 finally{
    session.close();

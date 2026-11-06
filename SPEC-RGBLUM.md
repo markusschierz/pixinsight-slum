@@ -2,6 +2,8 @@
 
 **Status:** Durch den ausdrücklichen Umsetzungsauftrag vom 6. November 2026 fachlich freigegeben. Führendes [Feature-Issue #13](https://github.com/markusschierz/pixinsight-slum/issues/13). Ergänzt [SPEC.md](SPEC.md) und [SPEC-SPFC.md](SPEC-SPFC.md). Die bisherige Gewichtsregel für LRGB wird nur an der hier beschriebenen Stelle ersetzt.
 
+**UI-Nachschärfung:** Die Slider und die Darstellung von Bin 3×3 folgen [Issue #15](https://github.com/markusschierz/pixinsight-slum/issues/15).
+
 ## Zielgruppe und Problem
 
 Astrofotografierende sollen der echten Luminanz in einer SLUM bewusst mehr Einfluss geben können. Die bisherige inverse Noise-Gewichtung über alle vier gleich gesampelten Kanäle ergab mit den realen SPFC-Beispielen L 28,675 % und zusammen RGB 71,325 %. Das minimiert geschätztes Rauschen, bildet aber nicht die gewünschte L-dominierte Mischung ab.
@@ -17,7 +19,7 @@ Astrofotografierende sollen der echten Luminanz in einer SLUM bewusst mehr Einfl
 
 ## UI-Design
 
-Der native PixInsight-Dialog zeigt nach der Analyse und nur bei einer Auswahl mit L den beschrifteten NumericControl **„L-Anteil an SLUM“** mit Slider und editierbarer Prozentzahl `50…80`, initial `70`. Ein Text daneben erläutert: **„RGBLUM erhält den Rest; R/G/B werden darin nach Noise gewichtet.“** Bei mehreren RGB-Sampling-Gruppen folgt darunter die bestehende Gruppe-Anteil-Eingabe mit der Überschrift **„Anteile innerhalb RGBLUM (zusammen 100 %)“**. Die Zusammenfassung nennt vor der Ausgabe `L 70 % + RGBLUM 30 %`; endgültige Noise- und Kanalgewichte erscheinen erst nach der Ausgabe. Bei fehlendem oder ungültigem Sampling bzw. unvollständigen RGB-Gruppenanteilen bleibt „SLUM erstellen“ gesperrt.
+Der native PixInsight-Dialog zeigt nach der Analyse und nur bei einer Auswahl mit L den beschrifteten NumericControl **„L-Anteil an SLUM“** mit Slider und editierbarer Prozentzahl `50…80`, initial `70`. Ein Text daneben erläutert die RGBLUM-Gewichtung. Bei nur einer RGB-Sampling-Gruppe nennt er die Kanäle und Sampling-Werte; insbesondere braucht **L 2×2 mit R/G/B 3×3** keinen weiteren Gruppenanteil. Bei zwei RGB-Gruppen erscheint **ein Slider** für die erste Gruppe; die zweite erhält automatisch den Rest. Bei drei Gruppen erscheinen zwei Slider und die dritte erhält den Rest. Die Gruppen nennen Kanäle und Sampling (einschließlich 3×3); die Zusammenfassung übersetzt ihre RGBLUM-Anteile in Anteile an der fertigen SLUM. Eine Gruppenaufteilung muss der Nutzer durch Bewegen eines Sliders ausdrücklich festlegen. Die Zusammenfassung nennt vor der Ausgabe `L 70 % + RGBLUM 30 %`; endgültige Noise- und Kanalgewichte erscheinen erst nach der Ausgabe. Bei fehlendem oder ungültigem Sampling bzw. unbestätigten RGB-Gruppenanteilen bleibt „SLUM erstellen“ gesperrt.
 
 ## Nicht-Ziele
 
@@ -31,6 +33,7 @@ Der native PixInsight-Dialog zeigt nach der Analyse und nur bei einer Auswahl mi
 2. Die Randwerte `0,50` und `0,80` funktionieren; außerhalb des Bereichs, NaN oder fehlende Werte werden abgewiesen. Ein Sliderwechsel verwendet die bestehende Analyse und löst keine Normalisierung/NoiseEvaluation aus.
 3. L plus Teilmenge, einschließlich nur eines Farbkanals, funktioniert. RGB ohne L folgt nachweislich der alten Gewichtung; die L-Steuerung bleibt verborgen.
 4. Bei L 1×1 und RGB 2×2 braucht es keine zweite L/RGB-Gruppenquote. Haben die Farbkanäle untereinander verschiedene Sampling-Gruppen, bleiben deren Anteile erforderlich und beziehen sich ausschließlich auf RGBLUM.
+5. L 2×2 und R/G/B 3×3 benötigt nur den L-Slider; PixInsight akzeptiert das Sampling aus Header oder Korrektur, sofern alle Bilder dasselbe registrierte Ausgaberaster haben. Bei zwei oder drei verschiedenen RGB-Gruppen setzen Slider die Anteile mit automatischem Rest; eine Änderung löst weder neue Analyse noch Normalisierung/NoiseEvaluation aus.
 5. Beide Normalisierungswege, Datei-/Ansichtseingabe und -ausgabe, Originalschutz, Fehlermeldungen und Cleanup bestehen die Regression. Ergebnisprotokoll nennt die tatsächlich verwendeten zwei Stufen und Endgewichte.
 
 **Risiko:** Ein gleichzeitig wirksamer alter Gruppenanteil und `a` würde L doppelt gewichten. Die Gruppenbildung muss deshalb bei vorhandenem L allein die Farbkanäle umfassen; eine einzige kanonische Gewichtsberechnung wird von Vorschauvalidierung und Ausgabe verwendet.
