@@ -2,6 +2,8 @@
 
 **Status:** Fachlich freigegeben am 6. November 2026. Führendes [Feature-Issue #11](https://github.com/markusschierz/pixinsight-slum/issues/11). Ergänzt die [bestehende SLUM-Spec](SPEC.md); deren Eingabe-, Sampling-, Gewichts-, Ausgabe- und Originalschutzregeln gelten weiter. Grundlage ist die lokale Wunschliste `SLUM-withSPFC.md`.
 
+**Spätere Ergänzung:** Die [RGBLUM-Spec](SPEC-RGBLUM.md) in [Issue #13](https://github.com/markusschierz/pixinsight-slum/issues/13) legt die zweistufige Gewichtung für L plus Farbkanäle fest. Die SPFC-Normalisierung bleibt bestehen.
+
 ## Zielgruppe, Problem und Ziel
 
 Astrofotografierende sollen aus bereits vorbereiteten linearen L/R/G/B-Mastern eine SLUM mit vergleichbarer Signalskala erzeugen. Die heutige Anwendung normalisiert alle Eingaben ausschließlich mit LinearFit. Wenn für **alle** gewählten Kanäle nachweislich geeignete SPFC-Flux-Kalibrationsdaten vorliegen, soll stattdessen eine einheitliche Flux-Normalisierung verwendet werden. LinearFit bleibt als ausdrücklich gewählter Fallback erhalten.

@@ -8,6 +8,8 @@
 
 **Freigegebene Erweiterung:** [SPFC-Flux als bevorzugte Normalisierung mit LinearFit-Fallback](SPEC-SPFC.md), geführt in [Issue #11](https://github.com/markusschierz/pixinsight-slum/issues/11). Die nachfolgende MVP-Beschreibung bleibt als Stand des ursprünglichen LinearFit-MVP erhalten; für die Erweiterung gelten die ergänzenden Verfahrens- und Referenzregeln der SPFC-Spec.
 
+**Aktuelle Gewichtsregel mit L:** Die [RGBLUM-Erweiterung](SPEC-RGBLUM.md) in [Issue #13](https://github.com/markusschierz/pixinsight-slum/issues/13) ersetzt für L mit mindestens einem Farbkanal die MVP-Gewichtung in den Punkten 5 und 6: RGB wird intern nach Noise gewichtet, danach gilt ein wählbarer L-Anteil von 50–80 %. Für RGB ohne L gelten die bisherigen Regeln unverändert.
+
 ## Capability Map
 
 Der MVP liefert eine zusammenhängende Fähigkeit. Die folgenden Teile sind innerhalb dieser Fähigkeit separat prüfbar:
