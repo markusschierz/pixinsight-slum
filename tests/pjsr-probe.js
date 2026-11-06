@@ -1,4 +1,5 @@
 // Run with PixInsight --automation-mode --run=<absolute path> --force-exit.
+#engine v8
 #include "../src/slum-core.js"
 #include "../src/slum-stats.js"
 let probe = new File;
@@ -25,7 +26,7 @@ try {
       for (let x = 0; x < 128; ++x)
          view.image.setSample(0.02 + ((x * 1973 + y * 9277) % 1000) / 1000000, x, y);
    view.endProcess();
-   probe.outTextLn("median=" + sampleMedians([view.image, view.image])[0]);
+   probe.outTextLn("median=" + nativeCommonMedians([view, view])[0]);
    let noise = estimateNoise(view.image);
    probe.outTextLn("noise=" + noise.noise + " count=" + noise.countPercent);
 } catch (error) {

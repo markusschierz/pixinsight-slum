@@ -50,3 +50,13 @@ test('rejects invalid noise and incomplete shares', () => {
     { id: 'R', noise: 1, group: 'bin2' },
   ], { bin1: 0.7, bin2: 0.2 }), /100|sum/i);
 });
+
+test('rejects unknown channel identifiers', () => {
+  assert.throws(() => chooseReference([
+    { id: 'toString', median: 0.01 }, { id: 'R', median: 0.02 },
+  ]), /Invalid/);
+  assert.throws(() => computeWeights([
+    { id: 'toString', noise: 1, group: 'bin1' },
+    { id: 'R', noise: 1, group: 'bin1' },
+  ]), /Invalid/);
+});

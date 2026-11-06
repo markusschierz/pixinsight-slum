@@ -1,39 +1,53 @@
-// Image.sample() is a PixInsight method; tests provide the same small interface.
-function sampleMedians(images, maxSamples) {
-   if (!images || images.length < 2 || images.length > 4)
-      throw new Error("Select two to four images.");
-   var width = images[0].width;
-   var height = images[0].height;
-   for (var i = 1; i < images.length; ++i)
-      if (images[i].width !== width || images[i].height !== height)
-         throw new Error("Images must have the same dimensions.");
-   var limit = maxSamples || 100000;
-   var step = Math.max(1, Math.ceil(Math.sqrt(width * height / limit)));
-   var values = images.map(function () { return []; });
-   for (var y = 0; y < height; y += step)
-      for (var x = 0; x < width; x += step) {
-         var pixel = [];
-         var valid = true;
-         for (var c = 0; c < images.length; ++c) {
-            var v = images[c].sample(x, y);
-            if (!isFinite(v) || v <= 0 || v >= 1) {
-               valid = false;
-               break;
-            }
-            pixel.push(v);
-         }
-         if (valid)
-            for (var k = 0; k < images.length; ++k)
-               values[k].push(pixel[k]);
+// Exact full-image median over the same valid pixel positions in all channels.
+// PixInsight computes the median natively; only one masked temporary exists at a time.
+function nativeCommonMedians(views) {
+   if (!views || views.length < 2 || views.length > 4)
+      throw new Error("Select two to four views.");
+   var valid = views.map(function (view) {
+      return "(" + view.id + ">0)*(" + view.id + "<1)";
+   }).join("*");
+   var medians = [];
+   for (var i = 0; i < views.length; ++i) {
+      var id = uniqueSlumViewId("SLUMMedian");
+      var p = new PixelMath;
+      p.expression = "iif(" + valid + "," + views[i].id + ",-1)";
+      p.useSingleExpression = true;
+      p.generateOutput = true;
+      p.createNewImage = true;
+      p.showNewImage = false;
+      p.rescale = false;
+      p.truncate = false;
+      p.newImageId = id;
+      p.newImageColorSpace = PixelMath.Gray;
+      p.newImageSampleFormat = PixelMath.f32;
+      var temporary = null;
+      try {
+         if (!p.executeOn(views[i]))
+            throw new Error("Median mask calculation failed.");
+         temporary = View.viewById(id).window;
+         var image = temporary.mainView.image;
+         image.rangeClippingEnabled = true;
+         image.rangeClipLow = 0;
+         image.rangeClipHigh = 1;
+         var median = image.median();
+         if (!isFinite(median) || median <= 0 || median >= 1)
+            throw new Error("No common valid pixels for a median.");
+         medians.push(median);
+      } finally {
+         if (temporary && !temporary.isNull)
+            temporary.forceClose();
       }
-   if (values[0].length === 0)
-      throw new Error("No common valid pixels for a median.");
-   return values.map(function (samples) {
-      samples.sort(function (a, b) { return a - b; });
-      var middle = Math.floor(samples.length / 2);
-      return samples.length % 2 ? samples[middle] :
-         (samples[middle - 1] + samples[middle]) / 2;
-   });
+   }
+   return medians;
+}
+
+function uniqueSlumViewId(prefix) {
+   var id, existing;
+   do {
+      id = prefix + Math.floor(Math.random() * 1000000000);
+      existing = View.viewById(id);
+   } while (existing && !existing.isNull);
+   return id;
 }
 
 // Matches the method in PixInsight's bundled NoiseEvaluation script v2.1.1.
@@ -59,5 +73,14 @@ function estimateNoise(image) {
    return { noise: noise, countPercent: 100 * result[1] / area, layers: layers };
 }
 
+function countWarning(percent) {
+   if (!isFinite(percent) || percent < 0 || percent > 100)
+      throw new Error("Invalid count percentage.");
+   if (percent < 25) return "DEUTLICHE WARNUNG: count <25%";
+   if (percent < 50) return "Warnung: count <50%";
+   return "";
+}
+
 if (typeof module !== "undefined" && module.exports)
-   module.exports = { sampleMedians: sampleMedians, estimateNoise: estimateNoise };
+   module.exports = { nativeCommonMedians: nativeCommonMedians,
+      estimateNoise: estimateNoise, countWarning: countWarning };
