@@ -43,14 +43,18 @@ try {
    dialog.registration.checked = true;
    dialog.refreshSummary();
    report.outTextLn("saveEnabled=" + dialog.saveButton.enabled);
-   dialog.analyze("B");
+   let analyzedRows = dialog.session.rows;
+   dialog.referenceCombo.onItemSelected(2);
    report.outTextLn("override=" + dialog.session.reference + " shares=" +
-      dialog.shareRows[0].edit.text + "," + dialog.shareRows[1].edit.text);
+      dialog.shareRows[0].edit.text + "," + dialog.shareRows[1].edit.text +
+      " reusedRows=" + (dialog.session.rows === analyzedRows));
    dialog.refreshSummary();
    report.outTextLn("afterOverrideEnabled=" + dialog.saveButton.enabled);
    dialog.render().save("/tmp/slum-ui-probe.png");
    dialog.create();
    report.outTextLn("created=" + File.exists(output) + " status=" + dialog.status.text);
+   report.outTextLn("resultHasNoise=" + (dialog.report.text.indexOf("Noise nach LinearFit:")>=0) +
+      " resultHasWeights=" + (dialog.report.text.indexOf("Endgewichte:")>=0));
    File.remove(output);
    let originalProgress = dialog.progress;
    dialog.progress = function(stage){

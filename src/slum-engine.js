@@ -102,6 +102,8 @@ function SlumSession() {
    this.registrationCertain = false;
    this.width = 0;
    this.height = 0;
+   this.prepared = false;
+   this.lastRun = null;
 }
 
 SlumSession.prototype.close = function () {
@@ -114,10 +116,12 @@ SlumSession.prototype.close = function () {
    this.registrationCertain = false;
    this.width = 0;
    this.height = 0;
+   this.prepared = false;
 };
 
 SlumSession.prototype.analyze = function (config, referenceOverride, progress) {
    this.close();
+   this.lastRun = null;
    progress = progress || function () {};
    var selected = selectedChannels(config);
    var sourceViews = [];
@@ -203,25 +207,7 @@ SlumSession.prototype.analyze = function (config, referenceOverride, progress) {
       progress("Median berechnet");
       for (var m = 0; m < this.rows.length; ++m) this.rows[m].median = medians[m];
       this.recommended = chooseReference(this.rows);
-      this.reference = referenceOverride || this.recommended;
-      if (!this.rows.some(function (r) { return r.id === this.reference; }, this))
-         throw new Error("Die gewählte Referenz gehört nicht zu den Eingaben.");
-      var reference = this.rows.filter(function (r) { return r.id === this.reference; }, this)[0];
-      for (var k = 0; k < this.rows.length; ++k) {
-         var target = this.rows[k];
-         if (target.id !== this.reference) {
-            var fit = new LinearFit;
-            fit.referenceViewId = reference.view.id;
-            fit.rejectLow = 0;
-            fit.rejectHigh = 0.92;
-            if (!fit.executeOn(target.view)) throw new Error(target.id + ": LinearFit fehlgeschlagen.");
-         }
-         var estimate = estimateNoise(target.view.image);
-         target.noise = estimate.noise;
-         target.countPercent = estimate.countPercent;
-         target.layers = estimate.layers;
-         progress("Noise " + target.id + " gemessen");
-      }
+      this.selectReference(referenceOverride || this.recommended);
       return this.rows;
    } catch (error) {
       this.close();
@@ -229,12 +215,58 @@ SlumSession.prototype.analyze = function (config, referenceOverride, progress) {
    }
 };
 
-SlumSession.prototype.weights = function (sampling, shares) {
+SlumSession.prototype.selectReference = function (id) {
+   if (this.prepared) throw new Error("Nach LinearFit bitte erneut analysieren.");
+   if (!this.rows.some(function (r) { return r.id === id; }))
+      throw new Error("Die gewählte Referenz gehört nicht zu den Eingaben.");
+   this.reference = id;
+};
+
+SlumSession.prototype.prepare = function (progress) {
+   if (this.prepared) return;
+   progress = progress || function () {};
+   if (!this.reference) throw new Error("Zuerst Referenz auswählen.");
+   var reference = this.rows.filter(function (r) { return r.id === this.reference; }, this)[0];
+   for (var k = 0; k < this.rows.length; ++k) {
+      var target = this.rows[k];
+      if (target.id !== this.reference) {
+         progress("LinearFit " + target.id + " auf " + this.reference);
+         var fit = new LinearFit;
+         fit.referenceViewId = reference.view.id;
+         fit.rejectLow = 0;
+         fit.rejectHigh = 0.92;
+         if (!fit.executeOn(target.view)) throw new Error(target.id + ": LinearFit fehlgeschlagen.");
+      }
+      progress("Noise " + target.id + " wird gemessen");
+      var estimate = estimateNoise(target.view.image);
+      target.noise = estimate.noise;
+      target.countPercent = estimate.countPercent;
+      target.layers = estimate.layers;
+   }
+   this.prepared = true;
+};
+
+SlumSession.prototype.validateMix = function (sampling, shares) {
    if (this.rows.length < 2) throw new Error("Zuerst Bilder analysieren.");
+   return computeWeights(this.rows.map(function (r) {
+      return { id: r.id, group: samplingKey(sampling[r.id]), noise: 1 };
+   }), shares);
+};
+
+SlumSession.prototype.weights = function (sampling, shares) {
+   if (!this.prepared) throw new Error("Noise wird erst bei der Ausgabe gemessen.");
    var members = this.rows.map(function (r) {
       return { id: r.id, group: samplingKey(sampling[r.id]), noise: r.noise };
    });
    return computeWeights(members, shares);
+};
+
+SlumSession.prototype.captureRun = function (weights) {
+   this.lastRun = { recommended: this.recommended, reference: this.reference,
+      weights: weights, rows: this.rows.map(function (r) {
+         return { id: r.id, sourceLabel: r.sourceLabel, median: r.median,
+            noise: r.noise, countPercent: r.countPercent, layers: r.layers };
+      }) };
 };
 
 SlumSession.prototype.checkReady = function (registrationConfirmed) {
@@ -278,11 +310,13 @@ SlumSession.prototype.create = function (path, sampling, shares, registrationCon
    this.checkReady(registrationConfirmed);
    if (!/\.xisf$/i.test(path)) throw new Error("Ausgabe muss eine .xisf-Datei sein.");
    if (File.exists(path)) throw new Error("Ausgabedatei existiert bereits.");
-   var weights = this.weights(sampling, shares);
+   this.validateMix(sampling, shares);
    var temporaryPath = path.replace(/\.xisf$/i, ".slum-partial.xisf");
    if (File.exists(temporaryPath)) throw new Error("Temporärer Ausgabepfad ist bereits belegt.");
    var output = null;
    try {
+      this.prepare(progress);
+      var weights = this.weights(sampling, shares);
       progress("SLUM wird berechnet");
       output = this.renderOutput(weights, uniqueSlumViewId("SLUMOutput"));
       progress("SLUM wird gespeichert");
@@ -291,6 +325,7 @@ SlumSession.prototype.create = function (path, sampling, shares, registrationCon
       progress("Temporäre XISF gespeichert");
       if (File.exists(path)) throw new Error("Ausgabedatei existiert bereits.");
       File.move(temporaryPath, path);
+      this.captureRun(weights);
       return weights;
    } catch (error) {
       if (File.exists(temporaryPath)) File.remove(temporaryPath);
@@ -304,10 +339,12 @@ SlumSession.prototype.create = function (path, sampling, shares, registrationCon
 SlumSession.prototype.createView = function (sampling, shares, registrationConfirmed, progress) {
    progress = progress || function () {};
    this.checkReady(registrationConfirmed);
-   var weights = this.weights(sampling, shares);
+   this.validateMix(sampling, shares);
    var output = null;
    var completed = false;
    try {
+      this.prepare(progress);
+      var weights = this.weights(sampling, shares);
       progress("SLUM wird berechnet");
       var outputId = "SLUM";
       var n = 1;
@@ -319,6 +356,7 @@ SlumSession.prototype.createView = function (sampling, shares, registrationConfi
       progress("SLUM-Ansicht wird ausgegeben");
       output.show();
       output.bringToFront();
+      this.captureRun(weights);
       completed = true;
       return { viewId: outputId, weights: weights };
    } finally {

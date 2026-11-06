@@ -31,6 +31,7 @@ try {
    let rows = session.analyze({ L: { source: "file", path: filePath },
       R: { source: "view", viewId: r.mainView.id } });
    report.outTextLn("mixedSources=" + rows.map(function(row){return row.sourceLabel}).join(";"));
+   session.prepare();
    let weights = session.weights({L:"1x1",R:"1x1"},null);
    let expected = weights[0].weight * rows[0].view.image.sample(40,60) +
       weights[1].weight * rows[1].view.image.sample(40,60);

@@ -29,6 +29,7 @@ try{
    for(let i=0;i<ids.length;++i)config[ids[i]]={path:makeFile(ids[i],i)};
    let rows=session.analyze(config);
    let sampling={L:"1x1",R:"2x2",G:"2x2",B:"2x2"};
+   session.prepare();
    let weights=session.weights(sampling,{"1x1":0.7,"2x2":0.3});
    let sum=weights.reduce(function(s,w){return s+w.weight},0);
    let rgb=weights.slice(1).reduce(function(s,w){return s+w.weight},0);
