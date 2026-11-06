@@ -27,14 +27,15 @@ try {
    let rows = session.analyze({R:{path:paths[0]},B:{path:paths[1]}});
    report.outTextLn("reference=" + session.recommended + " actual=" + session.reference);
    report.outTextLn("rows=" + rows.map(function(r){return r.id+":"+r.median+":"+r.noise+":"+r.sampling}).join(";"));
-   try { session.weights({R:"",B:"2x2"},{"1x1":0.7,"2x2":0.3}); }
+   try { session.validateMix({R:"",B:"2x2"},{"1x1":0.7,"2x2":0.3}); }
    catch(e) { report.outTextLn("missingSampling=" + String(e)); }
-   try { session.weights({R:"1x1",B:"2x2"},{"1x1":0.7,"2x2":0.2}); }
+   try { session.validateMix({R:"1x1",B:"2x2"},{"1x1":0.7,"2x2":0.2}); }
    catch(e) { report.outTextLn("badShares=" + String(e)); }
    try { session.create(output,{R:"1x1",B:"2x2"},{"1x1":0.7,"2x2":0.3},false); }
    catch(e) { report.outTextLn("unconfirmedRaster=" + String(e)); }
    try { session.create(paths[0],{R:"1x1",B:"2x2"},{"1x1":0.7,"2x2":0.3},true); }
    catch(e) { report.outTextLn("existingOutput=" + String(e)); }
+   session.prepare();
    let expected = 0.7 * rows[0].view.image.sample(40,60) +
       0.3 * rows[1].view.image.sample(40,60);
    let weights = session.create(output,{R:"1x1",B:"2x2"},{"1x1":0.7,"2x2":0.3},true);

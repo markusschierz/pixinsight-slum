@@ -17,6 +17,7 @@ try {
       R:{source:"view",viewId:original.mainView.id} });
    report.outTextLn("sources="+rows.map(function(r){return r.sourceLabel}).join(";"));
    report.outTextLn("reference="+session.recommended);
+   session.prepare();
    let weights = session.weights({L:"1x1",R:"1x1"},null);
    let expected = weights[0].weight*rows[0].view.image.sample(4000,3000)+
       weights[1].weight*rows[1].view.image.sample(4000,3000);

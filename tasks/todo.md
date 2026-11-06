@@ -1,6 +1,6 @@
 # Aufgabenliste: PixInsight SLUM
 
-**Status:** Freigegeben am 6. November 2026; Aufgaben 1–8 sowie die ergänzte Quellen- und Ausgabewahl implementiert und geprüft. Aufgabe 9 wartet nur auf die manuelle Tastaturnavigation. [Abnahmeprotokoll](../docs/acceptance.md).
+**Status:** Freigegeben am 6. November 2026; Aufgaben 1–8 sowie die ergänzte Quellen- und Ausgabewahl und der verschobene Fit-Zeitpunkt implementiert und geprüft. Aufgabe 9 wartet nur auf die manuelle Tastaturnavigation. [Abnahmeprotokoll](../docs/acceptance.md).
 
 **Basis:** [freigegebene SPEC](../SPEC.md), [freigegebener Plan](plan.md), [führendes Issue #1](https://github.com/markusschierz/pixinsight-slum/issues/1).
 
@@ -54,7 +54,7 @@
 ### Aufgabe 6: LRGB, Teilmengen und Override ergänzen
 
 - [x] Zwei bis vier ausgewählte Kanäle einschließlich RGB ohne L verarbeiten; Medianempfehlung und manuelle Referenzwahl getrennt anzeigen.
-- **Abnahme:** Ein Referenzwechsel löst Fit und Noise-Messung neu aus; veraltete Werte können nicht gespeichert werden.
+- **Abnahme:** Die später korrigierte Reihenfolge lässt Referenzwechsel ohne erneute Analyse zu; Fit und Noise laufen erst bei der Ausgabe auf der endgültig gewählten Referenz.
 - **Prüfung:** LRGB, RGB und eine Zwei-Kanal-Teilmenge mit und ohne Override in PixInsight ausführen.
 - **Betroffen:** Dialogzustand, Auswahlvalidierung, Fit-Orchestrierung, Integrationstest. **Abhängigkeit:** 5.
 
@@ -105,3 +105,11 @@ Die spätere Nutzerergänzung erweitert die Ausgabe innerhalb des führenden Iss
 - [x] Dieselbe gewichtete PixelMath-Berechnung für beide Modi nutzen; die neue SLUM-Ansicht bleibt nach dem Aufräumen erhalten.
 - [x] Namenskollisionen mit `SLUM_1` usw. behandeln, beim Abbruch die neue Ansicht entfernen und Originale unverändert lassen.
 - **Prüfung:** Native PixInsight-Probe für Bildformat, Pixelwert, keine Datei im Ansichtsmodus, erhaltene Ansicht, Namenskollision, Abbruch und Dialogzustand; Regression des Dateimodus.
+
+## PR 8 – LinearFit und Noise bei der Ausgabe
+
+- [x] Analyse auf Eingabeprüfung, Arbeitskopien und gemeinsamen gültigen Median beschränken.
+- [x] Referenzwechsel ohne erneutes Laden, Medianberechnen oder Fitten ermöglichen.
+- [x] LinearFit, NoiseEvaluation, Gewichte und Warnungen beim Erzeugen der Datei oder Ansicht berechnen und im Ergebnisprotokoll anzeigen.
+- [x] Dateimodus, Ansichtsmodus, Abbruch und Originalschutz prüfen.
+- **Messung:** Reale LRGB-Stacks: Analyse 3,855 s, Referenzwechsel unter 1 ms, XISF-Ausgabe 44,248 s; Gewichte und Ausgabepixel wie zuvor.
