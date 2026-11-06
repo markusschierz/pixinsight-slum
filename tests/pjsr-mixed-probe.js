@@ -31,8 +31,9 @@ try{
    let rows=session.analyze(config);
    session.selectMethod("linearFit");
    let sampling={L:"1x1",R:"2x2",G:"2x2",B:"2x2"};
+   session.setLuminanceFraction(0.6);
    session.prepare();
-   let weights=session.weights(sampling,{"1x1":0.7,"2x2":0.3});
+   let weights=session.weights(sampling,null);
    let sum=weights.reduce(function(s,w){return s+w.weight},0);
    let rgb=weights.slice(1).reduce(function(s,w){return s+w.weight},0);
    let expected=weights.reduce(function(s,w){
@@ -42,7 +43,7 @@ try{
    report.outTextLn("sampling="+rows.map(function(r){return r.id+":"+r.sampling}).join(","));
    report.outTextLn("weights="+weights.map(function(w){return w.id+":"+w.weight}).join(","));
    report.outTextLn("L="+weights[0].weight+" RGB="+rgb+" sum="+sum);
-   session.create(output,sampling,{"1x1":0.7,"2x2":0.3},true);
+   session.create(output,sampling,null,true);
    let result=ImageWindow.open(output)[0];
    report.outTextLn("pixelDifference="+
       Math.abs(expected-result.mainView.image.sample(40,60)));

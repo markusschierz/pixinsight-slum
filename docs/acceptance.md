@@ -2,6 +2,8 @@
 
 **Stand:** 6. November 2026 · PixInsight Core 1.9.6 Lockhart, PJSR V8 · führendes Issue [#1](https://github.com/markusschierz/pixinsight-slum/issues/1)
 
+Die Zahlen im ersten Abschnitt dokumentieren den ursprünglichen MVP. Die aktuelle Mischung mit L folgt der [RGBLUM-Erweiterung](../SPEC-RGBLUM.md) und ist am Ende separat geprüft.
+
 ## Verifizierte Fälle
 
 | Fall | Ergebnis |
@@ -38,3 +40,15 @@ Die [technische Evidenz](spfc-evidence.md) dokumentiert PixInsights Metadaten un
 | WCS der SPFC-Beispiele | Kleine Abweichungen unabhängiger Plate Solves lösen die ausdrückliche Rasterbestätigung aus. Ein Versatz über zwei Ausgabepixel bleibt ein Fehler. |
 
 Die visuelle Dialogprobe zeigt SPFC als ausgewähltes Verfahren, die Kanalwerte als Text, die gesperrte LinearFit-Referenz und die bestätigungspflichtige Registrierung. Die Tastaturreihenfolge der neu hinzugekommenen Methodenauswahl wurde in einer interaktiven PixInsight-Sitzung noch nicht manuell geprüft.
+
+## Zweistufige RGBLUM-Gewichtung (Issue #13)
+
+| Fall | Ergebnis |
+| --- | --- |
+| SPFC-LRGB als Ansicht | Reale Flux-Beispiele, `a=0,65`: Endgewichte L `0,65`, R `0,1192977515`, G `0,1158623027`, B `0,1148399458`; RGB zusammen `0,35`. Ausgabepixel `0,08850366622209549` gegenüber unabhängig berechnet `0,08850366413146869` (Float32-Differenz `2,09e-9`). L-Originalpixel unverändert. |
+| RGB ohne L als Datei | Reale Flux-Beispiele: bestehende RGB-Gewichtung unverändert; gespeicherte XISF wieder geöffnet, Pixelabweichung `7,70e-10`. |
+| LinearFit, L 1×1 und RGB 2×2 | Synthetische XISF-Probe mit `a=0,60`: L `0,60`, RGB zusammen `0,40`; keine zusätzliche L/RGB-Gruppeneingabe. XISF-Pixelabweichung `3,63e-10`. |
+| LinearFit, verschiedene RGB-Gruppen | Synthetische Ansichtsprobe mit L/R 1×1, G/B 2×2, `a=0,70` und RGB-Gruppenanteilen 40/60: L `0,70`, RGB `0,30`, R `0,12`, G+B `0,18`. Unabhängig berechneter Pixelwert weicht um `3,35e-10` ab. Quellpixel unverändert. Dialog zeigt nur die zwei RGB-Gruppen und die zweistufige Zusammenfassung. |
+| Dialog und aufgeschobene Berechnung | Native UI-Probe: L-Slider auf 80 %, dieselbe Analyseinstanz, Noise noch nicht gemessen, Zusammenfassung `80 % L + 20 % RGBLUM`; LinearFit-Override bleibt ohne Neuanalyse möglich. RGB-only-Dialogregression und LinearFit-Ansichtsprobe bestanden. |
+
+Die Abnahme umfasst Node-Tests der Grenzwerte 50/80 %, ungültiger Werte, L mit einem Farbkanal, RGB-only und gemischter RGB-Gruppen sowie native PixInsight-Proben für SPFC und LinearFit. Das neue UI wurde als PixInsight-Dialog gerendert und visuell geprüft.

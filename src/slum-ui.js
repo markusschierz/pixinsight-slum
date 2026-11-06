@@ -124,6 +124,26 @@ class SlumDialog extends Dialog {
       refRow.add(this.analyzeButton);
       main.add(refRow);
 
+      this.lShare = new NumericControl(this);
+      this.lShare.label.text = "L-Anteil an SLUM (%)";
+      this.lShare.setRange(50, 80);
+      this.lShare.setPrecision(0);
+      this.lShare.slider.setRange(50, 80);
+      this.lShare.setValue(70);
+      this.lShare.toolTip = "50 bis 80 % echte Luminanz; der Rest stammt aus RGBLUM.";
+      this.lShare.visible = false;
+      this.lShare.onValueUpdated = value => {
+         if (!this.suppress && !this.busy) {
+            this.session.setLuminanceFraction(value / 100);
+            this.refreshSummary();
+         }
+      };
+      main.add(this.lShare);
+      this.lShareHint = new Label(this);
+      this.lShareHint.text = "RGBLUM erhält den Rest; R/G/B werden darin nach Noise gewichtet.";
+      this.lShareHint.visible = false;
+      main.add(this.lShareHint);
+
       this.shareLabel = new Label(this);
       this.shareLabel.text = "Anteile der Sampling-Gruppen (zusammen 100 %)";
       this.shareLabel.visible = false;
@@ -302,6 +322,7 @@ class SlumDialog extends Dialog {
       this.registration.enabled = enabled;
       for (var i = 0; i < this.shareRows.length; ++i)
          this.shareRows[i].edit.enabled = enabled;
+      this.lShare.enabled = enabled && this.analyzed;
    }
 
    outputModeChanged() {
@@ -332,6 +353,8 @@ class SlumDialog extends Dialog {
       if (this.busy) { this.cancelRequested = true; return; }
       this.session.close();
       this.analyzed = false;
+      this.lShare.visible = false;
+      this.lShareHint.visible = false;
       this.methodCombo.enabled = false;
       this.referenceCombo.enabled = false;
       this.saveButton.enabled = false;
@@ -344,6 +367,7 @@ class SlumDialog extends Dialog {
       this.cancelRequested = false;
       this.closeAfterCancel = false;
       this.analyzed = false;
+      this.groupNames = [];
       this.saveButton.enabled = false;
       this.analyzeButton.enabled = false;
       this.methodCombo.enabled = false;
@@ -377,6 +401,8 @@ class SlumDialog extends Dialog {
          this.session.close();
          this.suppress = false;
          this.analyzed = false;
+         this.lShare.visible = false;
+         this.lShareHint.visible = false;
          this.methodCombo.enabled = false;
          this.referenceCombo.enabled = false;
          var cancelled = error.message === "Vom Nutzer abgebrochen.";
@@ -400,9 +426,13 @@ class SlumDialog extends Dialog {
 
    refreshGroups() {
       if (this.suppress || !this.analyzed) return;
+      var hasL = this.session.rows.some(function (row) { return row.id === "L"; });
+      this.lShare.visible = hasL;
+      this.lShareHint.visible = hasL;
       var groups = [];
       for (var i = 0; i < this.session.rows.length; ++i) {
          var row = this.session.rows[i];
+         if (hasL && row.id === "L") continue;
          var value = this.channels[row.id].sampling.text;
          try {
             var key = samplingKey(value);
@@ -413,6 +443,8 @@ class SlumDialog extends Dialog {
       for (var k = 0; k < this.groupNames.length; ++k)
          old[this.groupNames[k]] = this.shareRows[k].edit.text;
       this.groupNames = groups;
+      this.shareLabel.text = hasL ? "Anteile innerhalb RGBLUM (zusammen 100 %)" :
+         "Anteile der Sampling-Gruppen (zusammen 100 %)";
       this.shareLabel.visible = groups.length > 1;
       for (var j = 0; j < this.shareRows.length; ++j) {
          var visible = groups.length > 1 && j < groups.length;
@@ -443,6 +475,7 @@ class SlumDialog extends Dialog {
    refreshSummary() {
       if (this.suppress || !this.analyzed) return;
       if (this.busy) { this.saveButton.enabled = false; return; }
+      var hasL = this.session.rows.some(function (row) { return row.id === "L"; });
       var lines = ["Eingaben / Normalisierung / Ausgabe", ""];
       var sampling = {};
       for (var i = 0; i < this.session.rows.length; ++i) {
@@ -461,6 +494,10 @@ class SlumDialog extends Dialog {
          lines.push("SPFC außerhalb des Skripts nachholen, danach erneut analysieren; oder LinearFit als Fallback ausdrücklich wählen.");
       lines.push("Verfahren: " + (this.session.method === "spfc" ? "SPFC-Flux" :
          this.session.method === "linearFit" ? "LinearFit (Fallback)" : "noch nicht gewählt"));
+      if (hasL)
+         lines.push("Zwei Stufen: RGBLUM aus R/G/B nach Noise; SLUM = " +
+            (100 * this.session.lFraction).toFixed(0) + "% L + " +
+            (100 * (1 - this.session.lFraction)).toFixed(0) + "% RGBLUM");
       if (this.session.method === "linearFit")
          lines.push("Referenzempfehlung: " + this.session.recommended +
             "   Gewählte Referenz: " + this.session.reference);
@@ -472,7 +509,8 @@ class SlumDialog extends Dialog {
          this.session.validateMix(sampling, shares);
          if (this.groupNames.length > 1)
             for (var g = 0; g < this.groupNames.length; ++g)
-               lines.push("Gruppe " + this.groupNames[g] + ": " +
+               lines.push((hasL ? "RGBLUM-Gruppe " : "Gruppe ") +
+                  this.groupNames[g] + ": " +
                   (shares[this.groupNames[g]] * 100).toFixed(2) + "%");
       } catch (error) { valid = false; lines.push("Noch erforderlich: " + error.message); }
       lines.push("Normalisierung, Noise, count und Endgewichte: werden bei der Ausgabe berechnet.");
@@ -507,6 +545,13 @@ class SlumDialog extends Dialog {
          lines.push(row.id + "  Noise " + row.noise.toPrecision(7) +
             "  count " + row.countPercent.toFixed(2) + "%" +
             (warning ? "  " + warning : ""));
+      }
+      if (run.lFraction !== null) {
+         lines.push("RGBLUM intern: " + run.rgbWeights.map(function (w) {
+            return w.id + " " + (100 * w.weight).toFixed(3) + "%";
+         }).join("   "));
+         lines.push("SLUM = " + (100 * run.lFraction).toFixed(0) + "% L + " +
+            (100 * (1 - run.lFraction)).toFixed(0) + "% RGBLUM");
       }
       lines.push("Endgewichte: " + run.weights.map(function(w) {
          return w.id + " " + (100 * w.weight).toFixed(3) + "%";

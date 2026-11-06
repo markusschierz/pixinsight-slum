@@ -120,3 +120,10 @@ Die spätere Nutzerergänzung erweitert die Ausgabe innerhalb des führenden Iss
 - [x] **SPFC 2:** Vollständig gültigen SPFC-Satz für Datei- und Ansichtsquellen erkennen und mit einheitlicher Flux-Regel zu einer SLUM verarbeiten; Noise erst auf fertigen Arbeitsbildern messen. **Abnahme:** SPFC-LRGB und SPFC-RGB ohne LinearFit, korrekte Pixel/Noise/Gewichte, Originale unverändert. **Betroffen:** Engine, Dialog, Tests. **Abhängigkeit:** SPFC 1.
 - [x] **SPFC 3:** Fehlende/ungültige Eigenschaften pro Kanal erklären und Ausgabe bis zum ausdrücklich gewählten LinearFit-Fallback sperren; L-Default oder Median-Default mit Override ermöglichen. **Abnahme:** Referenzwechsel ohne Neuanalyse; gewählte Referenz wird tatsächlich verwendet. **Betroffen:** Engine, Dialog, Tests. **Abhängigkeit:** SPFC 2.
 - [x] **SPFC 4:** Datei- und Ansichtsmodus, gemischtes Sampling, Fortschritt, Ergebnisprotokoll und Cleanup prüfen und dokumentieren. **Abnahme:** Fehler und Abbruch ohne Teilergebnis, Regression der bisherigen Wege. **Betroffen:** Engine, Dialog, Dokumentation, Tests. **Abhängigkeit:** SPFC 3.
+
+## RGBLUM-Erweiterung – führendes Issue #13
+
+- [x] **1 – Gewichtsregel:** Zwei Stufen, L-Anteil 50–80 %, RGB-interne Noise-/Gruppenanteile und RGB-only-Regressionspfad als pure Funktion samt Tests. **Betroffen:** `src/slum-core.js`, Node-Tests. **Abhängigkeit:** keine.
+- [x] **2 – Ausgabepfad:** Vorprüfung, Endgewichte, PixelMath und Ergebnisdaten über dieselbe Regel führen; SPFC und LinearFit nativ prüfen. **Betroffen:** `src/slum-engine.js`, native Proben. **Abhängigkeit:** 1.
+- [x] **3 – Dialog:** Prozent-Slider, Erklärung, RGB-Gruppen und Protokoll in den nativen Dialog aufnehmen und rendern. **Betroffen:** `src/slum-ui.js`, UI-Probe. **Abhängigkeit:** 2.
+- [x] **4 – Abschluss:** Datei-/Ansichtsmodi, Fehler/Cleanup, Originalschutz, Tests und Dokumentation prüfen; PR mit CI. **Betroffen:** README, Abnahme, Tests. **Abhängigkeit:** 3.
