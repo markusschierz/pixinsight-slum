@@ -2,7 +2,7 @@
 
 PixInsight-Skript zur Erzeugung einer linearen Super-Luminanz aus zwei bis vier vorbereiteten L-, R-, G- und B-Mastern. Jeder Kanal kann aus einer Datei oder einer bereits geöffneten Hauptansicht stammen. Als Ausgabe kann eine neue XISF-Datei gespeichert oder eine SLUM-Ansicht in PixInsight erzeugt werden. Originaldateien und Ansichten bleiben unverändert.
 
-**Projektstatus:** Die [fachliche SPEC](SPEC.md), der [Umsetzungsplan](tasks/plan.md) und die [Aufgabenliste](tasks/todo.md) sind freigegeben. Der MVP ist implementiert und liegt in gestapelten Draft-PRs zur Prüfung. Der [fachliche Workflow](docs/pixinsight_super_lum_workflow.md) liegt als Referenz bei.
+**Projektstatus:** Der MVP ist implementiert und auf `main` gemergt. Die [fachliche SPEC](SPEC.md), der [Umsetzungsplan](tasks/plan.md), die [Aufgabenliste](tasks/todo.md) und der [fachliche Workflow](docs/pixinsight_super_lum_workflow.md) sind dokumentiert.
 
 Das [führende Issue #1](https://github.com/markusschierz/pixinsight-slum/issues/1) bündelt den fachlichen Umfang. Interne Umsetzungsschritte werden dort nicht als eigene Issues angelegt.
 
@@ -19,5 +19,6 @@ Die Eingaben müssen linear, registriert, gleich beschnitten und gradientenkorri
 ## Entwicklungsprüfung
 
 - Rechen- und Statistiktests: `node --test tests/*.test.cjs`
+- GitHub Actions führt diese Node-Tests bei Pull Requests und Pushes nach `main` aus. Der Check `node-tests` kann als erforderlicher Check für `main` gesetzt werden.
 - PixInsight-Probe: `/usr/bin/PixInsight --automation-mode --run=<absoluter Pfad zu tests/pjsr-probe.js> --force-exit`.
 - Weitere Proben: `pjsr-median-probe.js`, `pjsr-noise-parity.js`, `pjsr-engine-probe.js`, `pjsr-geometry-probe.js`, `pjsr-ui-probe.js`, `pjsr-view-probe.js`, `pjsr-view-ui-probe.js`, `pjsr-output-view-probe.js`, `pjsr-deferred-fit-probe.js`, `pjsr-mixed-probe.js`, `pjsr-real-probe.js` und `pjsr-real-view-probe.js` unter `tests/` mit demselben Aufruf. Jede Probe schreibt nur vorübergehend Testbilder nach `/tmp` und protokolliert dort ihr Ergebnis.
