@@ -12,9 +12,11 @@
 
 Der Plan bleibt beim festgelegten **PixInsight-Skript mit nativer PJSR-Oberfläche**. Es gibt keine Web-Anwendung und keine externe Laufzeit. Die lokal installierten PixInsight-Skripte für [NoiseEvaluation](/opt/PixInsight/src/scripts/NoiseEvaluation/NoiseEvaluation.js) und [BatchLinearFit](/opt/PixInsight/src/scripts/BatchLinearFit/BatchLinearFit.js) dienen als API-Referenz; konkrete Aufrufe werden gegen die installierte Version geprüft. Die Rechenlogik bleibt vom Dialog getrennt.
 
-Die bestätigten fachlichen Regeln werden übernommen: automatische Referenz mit niedrigstem gültigem Median samt Override; Noise-Messung nach LinearFit auf den tatsächlich kombinierten Bildern; `1/noise²` innerhalb gleicher Sampling-Gruppen; vom Nutzer bestätigte Anteile zwischen Gruppen; Eingaben nur lesen; dauerhaft genau eine SLUM-XISF-Datei erzeugen.
+Die bestätigten fachlichen Regeln werden übernommen: automatische Referenz mit niedrigstem gültigem Median samt Override; Noise-Messung nach LinearFit auf den tatsächlich kombinierten Bildern; `1/noise²` innerhalb gleicher Sampling-Gruppen; vom Nutzer bestätigte Anteile zwischen Gruppen; Eingaben nur lesen; als Ergebnis entweder eine SLUM-XISF-Datei oder eine SLUM-Ansicht erzeugen.
 
 **Ergänzung nach Planfreigabe:** Je Kanal kann nun auch eine bereits geöffnete PixInsight-Hauptansicht statt einer Datei gewählt werden. Die gemischte Quellenwahl verwendet denselben Fit-, Noise- und Ausgabeweg. Der zusätzliche Slice mit eigenem PR ist in der [Aufgabenliste](todo.md) festgehalten.
+
+**Weitere Ergänzung:** Die Ausgabe kann als XISF-Datei oder als neue PixInsight-Hauptansicht erfolgen. Beide Modi verwenden dieselbe PixelMath-Berechnung; nur der Ergebnislebenszyklus unterscheidet sich. Die Ansicht bleibt nach Cleanup erhalten, und im Ansichtsmodus wird keine Datei geschrieben. Test und PR-Grenze stehen in der [Aufgabenliste](todo.md).
 
 ## Vorliegende Beispieldaten
 

@@ -9,11 +9,13 @@ Geprüft auf PixInsight Core **1.9.6 Lockhart** (Linux), PJSR `#engine v8`.
 | Gemeinsamer gültiger Median | PixelMath-Maske für `0 < Pixel < 1` in allen Kanälen, `Image.median` mit Range-Clipping | `tests/pjsr-median-probe.js` |
 | LinearFit | `LinearFit.referenceViewId`, `executeOn` auf Arbeitskopien | Reale LRGB-/RGB-Läufe |
 | NoiseEvaluation | `Image.Sn`, `noiseMRS`, `noiseKSigma`, `selectedRect.area` | Exakter Werteabgleich mit installiertem NoiseEvaluation 2.1.1 |
-| SLUM und Ausgabe | `PixelMath` ohne Rescale/Truncate, `newImageSampleFormat = PixelMath.f32`, `ImageWindow.saveAs`, `File.move` | 32-Bit-Float-Graustufen-XISF und Pixelvergleich |
+| SLUM und Ausgabe | `PixelMath` ohne Rescale/Truncate, `newImageSampleFormat = PixelMath.f32`, `ImageWindow.saveAs`, `File.move`, `ImageWindow.show`, `bringToFront` | 32-Bit-Float-Graustufen-XISF oder erhaltene SLUM-Ansicht und Pixelvergleich |
 
 Die Medianberechnung läuft über das ganze gemeinsame Raster. Pixel an Registrierungsrändern (0), gesättigte Pixel (≥1), negative und nicht endliche Werte werden aus allen Kanalmedianen an derselben Position entfernt. Die temporäre Medianansicht wird nach jedem Kanal geschlossen.
 
 Bei einer Ansichtsquelle liest das Skript die aktuelle Hauptansicht und kopiert sie unmittelbar in ein eigenes 32-Bit-Arbeitsfenster. Die vom Nutzer geöffnete Ansicht wird weder verarbeitet noch geschlossen. Datei- und Ansichtsquellen können innerhalb eines Laufs gemischt werden. `tests/pjsr-view-probe.js` und `tests/pjsr-view-ui-probe.js` prüfen diese Pfade.
+
+Bei Ausgabe als Ansicht bleibt das PixelMath-Ergebnis mit der ID `SLUM` oder einer freien nummerierten Variante bestehen. Die Arbeitsansichten werden geschlossen; es gibt keinen Aufruf der Datei-Speicherfunktion. `tests/pjsr-output-view-probe.js` prüft Ergebnis, Dialog und Abbruch.
 
 WCS-Lösungen werden an drei Bildpositionen verglichen. Unterschiedliche Lösungen blockieren den Lauf. Wenn die Metadaten keine eindeutige Registrierung belegen, muss der Nutzer das gemeinsame Ausgaberaster bestätigen. Das Skript registriert oder resampelt nicht.
 
