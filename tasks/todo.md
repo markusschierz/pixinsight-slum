@@ -1,6 +1,6 @@
 # Aufgabenliste: PixInsight SLUM
 
-**Status:** Freigegeben am 6. November 2026; Aufgaben 1–8 sowie die ergänzte Quellen- und Ausgabewahl und der verschobene Fit-Zeitpunkt implementiert und geprüft. Aufgabe 9 wartet nur auf die manuelle Tastaturnavigation. [Abnahmeprotokoll](../docs/acceptance.md).
+**Status:** Freigegeben am 6. November 2026; Aufgaben 1–9 sowie die ergänzte Quellen- und Ausgabewahl und der verschobene Fit-Zeitpunkt implementiert und geprüft. Die Tab-Navigation wurde vom Nutzer bestätigt. [Abnahmeprotokoll](../docs/acceptance.md).
 
 **Basis:** [freigegebene SPEC](../SPEC.md), [freigegebener Plan](plan.md), [führendes Issue #1](https://github.com/markusschierz/pixinsight-slum/issues/1).
 
@@ -81,7 +81,7 @@
 ### Aufgabe 9: End-to-End-Abnahme dokumentieren
 
 - [x] Lokalen LRGB- und RGB-Datensatz sowie den gezielten Misch-Binning-Testfall gegen die fachlichen SPEC-Kriterien prüfen.
-- [ ] Tab-Reihenfolge in einer interaktiven PixInsight-Sitzung manuell prüfen.
+- [x] Tab-Reihenfolge in einer interaktiven PixInsight-Sitzung manuell prüfen (vom Nutzer am 6. November 2026 als in Ordnung bestätigt).
 - **Abnahme:** Nur SLUM entsteht; Gewichtung, Referenz, Ausgabeformat und Originalschutz sind für alle drei Fälle nachgewiesen.
 - **Prüfung:** PixInsight-Durchlauf, Pixelstichproben, Dateivergleich und Tastatur-/Fehlerzustände des Dialogs.
 - **Betroffen:** Abnahmeprotokoll, gegebenenfalls fokussierte Testkorrekturen. **Abhängigkeit:** 8.
