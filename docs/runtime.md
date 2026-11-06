@@ -17,6 +17,8 @@ Bei einer Ansichtsquelle liest das Skript die aktuelle Hauptansicht und kopiert 
 
 Bei Ausgabe als Ansicht bleibt das PixelMath-Ergebnis mit der ID `SLUM` oder einer freien nummerierten Variante bestehen. Die Arbeitsansichten werden geschlossen; es gibt keinen Aufruf der Datei-Speicherfunktion. `tests/pjsr-output-view-probe.js` prüft Ergebnis, Dialog und Abbruch.
 
+`analyze()` öffnet beziehungsweise kopiert die Quellen, prüft die Geometrie und bestimmt den gemeinsamen gültigen Median. `selectReference()` ändert nur die Referenz-ID. Erst `create()` oder `createView()` ruft LinearFit und NoiseEvaluation auf; beide verwenden die endgültige Referenz. Die fertigen Werte werden vor dem Cleanup für das Ergebnisprotokoll festgehalten. `tests/pjsr-deferred-fit-probe.js` und der reale LRGB-Lauf prüfen die Reihenfolge.
+
 WCS-Lösungen werden an drei Bildpositionen verglichen. Unterschiedliche Lösungen blockieren den Lauf. Wenn die Metadaten keine eindeutige Registrierung belegen, muss der Nutzer das gemeinsame Ausgaberaster bestätigen. Das Skript registriert oder resampelt nicht.
 
 Die Noise-Funktion verwendet denselben Algorithmus wie das mitgelieferte `NoiseEvaluation.js` v2.1.1: `Sn`-Skalierung, MRS von vier bis zwei Ebenen mit 1-%-Schwelle, danach k-Sigma-Fallback. `tests/pjsr-noise-parity.js` vergleicht die Werte direkt mit der installierten Funktion.

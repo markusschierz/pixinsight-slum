@@ -13,20 +13,38 @@ try {
    preexisting = ImageWindow.open(root+"R.fit")[0];
    let originalSample = preexisting.mainView.image.sample(4000,3000);
    let originalModified = preexisting.isModified;
+   let analysisStart = Date.now();
    let rows = session.analyze({
       L:{path:root+"L.fit"}, R:{path:root+"R.fit"},
       G:{path:root+"G.fit"}, B:{path:root+"B.fit"}
    });
+   report.outTextLn("analysisSeconds=" + (Date.now()-analysisStart)/1000 +
+      " fitDeferred=" + rows.every(function(r){return r.noise===undefined}));
    report.outTextLn("reference=" + session.recommended + " certain=" + session.registrationCertain);
+   let switchStart=Date.now();
+   session.selectReference("R");
+   session.selectReference(session.recommended);
+   report.outTextLn("referenceSwitchMilliseconds=" + (Date.now()-switchStart));
    for (let i = 0; i < rows.length; ++i)
-      report.outTextLn(rows[i].id + " median=" + rows[i].median + " noise=" +
-         rows[i].noise + " count=" + rows[i].countPercent + " sampling=" + rows[i].sampling);
-   let expectedWeights = session.weights({L:"1x1",R:"1x1",G:"1x1",B:"1x1"},null);
-   let expected = expectedWeights.reduce(function(sum,w){
-      let row=rows.filter(function(r){return r.id===w.id})[0];
-      return sum+w.weight*row.view.image.sample(4000,3000);
-   },0);
-   let weights = session.create(output,{L:"1x1",R:"1x1",G:"1x1",B:"1x1"},null,true);
+      report.outTextLn(rows[i].id + " median=" + rows[i].median +
+         " sampling=" + rows[i].sampling);
+   let expected = NaN;
+   let outputStart = Date.now();
+   let weights = session.create(output,{L:"1x1",R:"1x1",G:"1x1",B:"1x1"},null,true,
+      function(stage) {
+         if (stage === "SLUM wird berechnet") {
+            let expectedWeights = session.weights({L:"1x1",R:"1x1",G:"1x1",B:"1x1"},null);
+            expected = expectedWeights.reduce(function(sum,w){
+               let row=rows.filter(function(r){return r.id===w.id})[0];
+               return sum+w.weight*row.view.image.sample(4000,3000);
+            },0);
+         }
+      });
+   report.outTextLn("outputSeconds=" + (Date.now()-outputStart)/1000);
+   for (let j=0;j<session.lastRun.rows.length;++j) {
+      let row=session.lastRun.rows[j];
+      report.outTextLn(row.id+" noise="+row.noise+" count="+row.countPercent);
+   }
    report.outTextLn("weights=" + weights.map(function(w){return w.id+":"+w.weight}).join(","));
    let result = ImageWindow.open(output)[0];
    report.outTextLn("output=" + result.mainView.image.width + "x" + result.mainView.image.height +

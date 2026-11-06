@@ -78,7 +78,12 @@ class SlumDialog extends Dialog {
       this.referenceCombo.currentItem = 0;
       this.referenceCombo.enabled = false;
       this.referenceCombo.onItemSelected = index => {
-         if (!this.suppress && this.analyzed) this.analyze(index === 0 ? "" : this.session.rows[index - 1].id);
+         if (!this.suppress && this.analyzed) {
+            this.referenceCombo.currentItem = index;
+            this.session.selectReference(index === 0 ? this.session.recommended :
+               this.session.rows[index - 1].id);
+            this.refreshSummary();
+         }
       };
       refRow.add(this.referenceCombo, 100);
       this.analyzeButton = new PushButton(this);
@@ -124,7 +129,7 @@ class SlumDialog extends Dialog {
       this.report = new TextBox(this);
       this.report.readOnly = true;
       this.report.minHeight = 260;
-      this.report.text = "Dateien oder geöffnete Ansichten wählen und Analysieren starten. Danach Referenz, Sampling und Gewichte prüfen.";
+      this.report.text = "Dateien oder geöffnete Ansichten wählen und Analysieren starten. Danach Referenz und Sampling prüfen; LinearFit und Noise laufen bei der Ausgabe.";
       main.add(this.report, 100);
       this.status = new Label(this);
       this.status.text = "Bereit";
@@ -310,7 +315,7 @@ class SlumDialog extends Dialog {
       this.analyzeButton.enabled = false;
       this.referenceCombo.enabled = false;
       this.setInputsEnabled(false);
-      this.status.text = "Analysiere Bilder und LinearFit…";
+      this.status.text = "Prüfe Eingaben und Median…";
       processEvents();
       try {
          var rows = this.session.analyze(this.config(), override, stage => this.progress(stage));
@@ -329,7 +334,7 @@ class SlumDialog extends Dialog {
          this.registration.visible = !this.session.registrationCertain;
          this.refreshGroups();
          this.adjustToContents();
-         this.status.text = "Analyse abgeschlossen. Werte prüfen und SLUM erstellen.";
+         this.status.text = "Analyse abgeschlossen. Referenz und Sampling prüfen.";
       } catch (error) {
          this.session.close();
          this.suppress = false;
@@ -399,18 +404,15 @@ class SlumDialog extends Dialog {
    refreshSummary() {
       if (this.suppress || !this.analyzed) return;
       if (this.busy) { this.saveButton.enabled = false; return; }
-      var lines = ["Eingaben / Statistik / Gewichte", ""];
+      var lines = ["Eingaben / Referenz / Ausgabe", ""];
       var sampling = {};
       for (var i = 0; i < this.session.rows.length; ++i) {
          var row = this.session.rows[i];
          sampling[row.id] = this.channels[row.id].sampling.text;
-         var warningText = countWarning(row.countPercent);
-         var warning = warningText ? "  " + warningText : "";
          lines.push(row.id + "  " + row.sourceLabel);
          lines.push("   Sampling " + sampling[row.id] + " (Header: " +
             (row.detectedSampling || "unbekannt") + ")  Median " +
-            row.median.toPrecision(7) + "  Noise " + row.noise.toPrecision(7) +
-            "  count " + row.countPercent.toFixed(2) + "%" + warning);
+            row.median.toPrecision(7));
       }
       lines.push("");
       lines.push("Referenzempfehlung: " + this.session.recommended +
@@ -420,15 +422,13 @@ class SlumDialog extends Dialog {
       var valid = true;
       try {
          var shares = this.shares();
-         var weights = this.session.weights(sampling, shares);
+         this.session.validateMix(sampling, shares);
          if (this.groupNames.length > 1)
             for (var g = 0; g < this.groupNames.length; ++g)
                lines.push("Gruppe " + this.groupNames[g] + ": " +
                   (shares[this.groupNames[g]] * 100).toFixed(2) + "%");
-         lines.push("Endgewichte: " + weights.map(function(w){
-            return w.id + " " + (100 * w.weight).toFixed(3) + "%";
-         }).join("   "));
       } catch (error) { valid = false; lines.push("Noch erforderlich: " + error.message); }
+      lines.push("LinearFit, Noise, count und Endgewichte: werden bei der Ausgabe berechnet.");
       if (this.outputMode.currentItem === 0) {
          lines.push("Ausgabe: Datei " + this.outputEdit.text);
          if (!/\.xisf$/i.test(this.outputEdit.text.trim())) valid = false;
@@ -443,6 +443,23 @@ class SlumDialog extends Dialog {
       if (!this.session.registrationCertain && !this.registration.checked) valid = false;
       this.report.text = lines.join("\n");
       this.saveButton.enabled = valid;
+   }
+
+   appendRunDetails() {
+      var run = this.session.lastRun;
+      var lines = ["", "LinearFit-Referenz: " + run.reference,
+         "Noise nach LinearFit:"];
+      for (var i = 0; i < run.rows.length; ++i) {
+         var row = run.rows[i];
+         var warning = countWarning(row.countPercent);
+         lines.push(row.id + "  Noise " + row.noise.toPrecision(7) +
+            "  count " + row.countPercent.toFixed(2) + "%" +
+            (warning ? "  " + warning : ""));
+      }
+      lines.push("Endgewichte: " + run.weights.map(function(w) {
+         return w.id + " " + (100 * w.weight).toFixed(3) + "%";
+      }).join("   "));
+      this.report.text += "\n" + lines.join("\n");
    }
 
    create() {
@@ -475,6 +492,7 @@ class SlumDialog extends Dialog {
             this.report.text += "\n\nFertig: SLUM-Ansicht " + result.viewId;
             this.status.text = "SLUM-Ansicht ausgegeben: " + result.viewId;
          }
+         this.appendRunDetails();
          this.analyzed = false;
          this.referenceCombo.enabled = false;
       } catch (error) {
