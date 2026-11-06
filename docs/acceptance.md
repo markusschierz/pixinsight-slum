@@ -23,4 +23,4 @@
 
 Die vier realen FITS-Header enthalten keine WCS-Lösung und laut Header jeweils 1×1-Binning. Deshalb verlangt das Skript vor ihrer Ausgabe die ausdrückliche Bestätigung des gemeinsamen registrierten Rasters. Ein realer 2×2-Master wurde nicht bereitgestellt; der Mischfall wurde mit synthetischen, auf dasselbe Raster gelegten XISF-Daten geprüft. Die Ansichtsauswahl wurde zusätzlich mit einer real geöffneten R-FITS-Ansicht geprüft.
 
-**Offen für die manuelle Gesamtabnahme:** Tab-Reihenfolge und Bedienbarkeit mit der Tastatur in einer interaktiven PixInsight-Sitzung. Die automatisierte PixInsight-Sitzung konnte keine echten Tab-Ereignisse an den nativen Dialog senden. Die Fensterdarstellung und die aktivierten/gesperrten Zustände wurden geprüft.
+**Manuelle Gesamtabnahme abgeschlossen:** Der Nutzer hat am 6. November 2026 bestätigt, dass die Tab-Navigation im PixInsight-Dialog in Ordnung ist. Die automatisierte PixInsight-Sitzung konnte keine echten Tab-Ereignisse senden; die Fensterdarstellung und die aktivierten/gesperrten Zustände wurden zusätzlich automatisiert geprüft.
