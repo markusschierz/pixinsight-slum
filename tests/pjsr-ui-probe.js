@@ -32,9 +32,14 @@ try {
    dialog.outputEdit.text = output;
    dialog.analyze("");
    report.outTextLn("reference=" + dialog.session.reference + " groups=" + dialog.groupNames.join(","));
+   report.outTextLn("withoutSharesEnabled=" + dialog.saveButton.enabled);
    dialog.shareRows[0].edit.text = "70";
    dialog.shareRows[1].edit.text = "30";
+   dialog.refreshSummary();
+   report.outTextLn("withoutConfirmationsEnabled=" + dialog.saveButton.enabled);
    dialog.prerequisite.checked = true;
+   dialog.refreshSummary();
+   report.outTextLn("withoutRasterConfirmationEnabled=" + dialog.saveButton.enabled);
    dialog.registration.checked = true;
    dialog.refreshSummary();
    report.outTextLn("saveEnabled=" + dialog.saveButton.enabled);
@@ -43,8 +48,18 @@ try {
       dialog.shareRows[0].edit.text + "," + dialog.shareRows[1].edit.text);
    dialog.refreshSummary();
    report.outTextLn("afterOverrideEnabled=" + dialog.saveButton.enabled);
+   dialog.render().save("/tmp/slum-ui-probe.png");
    dialog.create();
    report.outTextLn("created=" + File.exists(output) + " status=" + dialog.status.text);
+   File.remove(output);
+   let originalProgress = dialog.progress;
+   dialog.progress = function(stage){
+      if(stage === "Eingabe R geladen") this.cancelRequested = true;
+      return originalProgress.call(this,stage);
+   };
+   dialog.analyze("");
+   report.outTextLn("cancelled=" + dialog.status.text + " windows=" +
+      dialog.session.windows.length + " output=" + File.exists(output));
    dialog.session.close();
 } catch (e) { report.outTextLn("ERROR=" + String(e) + " MESSAGE=" + e.message + " STACK=" + e.stack); }
 finally {

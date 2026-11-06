@@ -28,7 +28,15 @@ test('falls back to k-sigma when MRS finds too few pixels', () => {
 
 test('warns at the specified count thresholds without changing a weight', () => {
   assert.match(countWarning(24.99), /DEUTLICHE/);
-  assert.match(countWarning(25), /Warnung/);
+  assert.equal(countWarning(25), 'Warnung: count <50%');
   assert.equal(countWarning(50), '');
-  assert.throws(() => countWarning(NaN), /Invalid/);
+  assert.throws(() => countWarning(NaN), /Ungültiger/);
+});
+
+test('rejects impossible noise pixel counts', () => {
+  assert.throws(() => estimateNoise({
+    Sn: () => 1,
+    selectedRect: { area: 100 },
+    noiseMRS: () => [0.2, 101],
+  }), /Noise-Wert/);
 });

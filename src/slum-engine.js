@@ -94,10 +94,16 @@ SlumSession.prototype.close = function () {
       closeWindow(this.windows[i]);
    this.windows = [];
    this.rows = [];
+   this.reference = "";
+   this.recommended = "";
+   this.registrationCertain = false;
+   this.width = 0;
+   this.height = 0;
 };
 
-SlumSession.prototype.analyze = function (config, referenceOverride) {
+SlumSession.prototype.analyze = function (config, referenceOverride, progress) {
    this.close();
+   progress = progress || function () {};
    var selected = selectedChannels(config);
    for (var a = 0; a < selected.length; ++a)
       for (var b = 0; b < a; ++b)
@@ -140,6 +146,7 @@ SlumSession.prototype.analyze = function (config, referenceOverride) {
          } finally {
             closeWindow(original);
          }
+         progress("Eingabe " + row.id + " geladen");
       }
       var complete = signatures.filter(function (s) { return !!s; });
       var solved = astrometry.filter(function (a) { return !!a; });
@@ -149,6 +156,7 @@ SlumSession.prototype.analyze = function (config, referenceOverride) {
       this.registrationCertain = solved.length === astrometry.length ||
          complete.length === signatures.length;
       var medians = nativeCommonMedians(this.rows.map(function (r) { return r.view; }));
+      progress("Median berechnet");
       for (var m = 0; m < this.rows.length; ++m) this.rows[m].median = medians[m];
       this.recommended = chooseReference(this.rows);
       this.reference = referenceOverride || this.recommended;
@@ -168,6 +176,7 @@ SlumSession.prototype.analyze = function (config, referenceOverride) {
          target.noise = estimate.noise;
          target.countPercent = estimate.countPercent;
          target.layers = estimate.layers;
+         progress("Noise " + target.id + " gemessen");
       }
       return this.rows;
    } catch (error) {
@@ -184,7 +193,8 @@ SlumSession.prototype.weights = function (sampling, shares) {
    return computeWeights(members, shares);
 };
 
-SlumSession.prototype.create = function (path, sampling, shares, registrationConfirmed) {
+SlumSession.prototype.create = function (path, sampling, shares, registrationConfirmed, progress) {
+   progress = progress || function () {};
    if (!this.rows.length) throw new Error("Zuerst Bilder analysieren.");
    if (!this.registrationCertain && !registrationConfirmed)
       throw new Error("Gleiches registriertes Raster bitte ausdrücklich bestätigen.");
@@ -199,6 +209,7 @@ SlumSession.prototype.create = function (path, sampling, shares, registrationCon
    if (File.exists(temporaryPath)) throw new Error("Temporärer Ausgabepfad ist bereits belegt.");
    var output = null;
    try {
+      progress("SLUM wird berechnet");
       var p = new PixelMath;
       p.expression = expression;
       p.useSingleExpression = true;
@@ -216,8 +227,10 @@ SlumSession.prototype.create = function (path, sampling, shares, registrationCon
       if (output.mainView.image.numberOfChannels !== 1 || output.bitsPerSample !== 32 ||
           !output.isFloatSample)
          throw new Error("Ausgabeformat ist nicht 32-Bit-Float-Graustufen.");
+      progress("SLUM wird gespeichert");
       if (!output.saveAs(temporaryPath, false, false, true, true))
          throw new Error("XISF konnte nicht gespeichert werden.");
+      progress("Temporäre XISF gespeichert");
       if (File.exists(path)) throw new Error("Ausgabedatei existiert bereits.");
       File.move(temporaryPath, path);
       return weights;
