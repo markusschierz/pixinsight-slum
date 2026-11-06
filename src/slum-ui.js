@@ -68,13 +68,45 @@ class SlumDialog extends Dialog {
       this.outputBrowse = outBrowse;
       main.add(fileRow);
 
+      var methodRow = new HorizontalSizer;
+      methodRow.spacing = 6;
+      var methodLabel = new Label(this);
+      methodLabel.text = "Normalisierung";
+      methodRow.add(methodLabel);
+      this.methodCombo = new ComboBox(this);
+      this.methodCombo.addItem("Verfahren wählen");
+      this.methodCombo.addItem("SPFC-Flux (bevorzugt)");
+      this.methodCombo.addItem("LinearFit verwenden (Fallback)");
+      this.methodCombo.currentItem = 0;
+      this.methodCombo.enabled = false;
+      this.methodCombo.onItemSelected = index => {
+         if (!this.suppress && this.analyzed) {
+            if (index === 1 && !this.session.spfcAvailable) {
+               this.suppress = true;
+               this.methodCombo.currentItem = 0;
+               this.suppress = false;
+               this.session.selectMethod("");
+               this.referenceCombo.enabled = false;
+               this.status.text = "SPFC ist nicht für alle Kanäle gültig.";
+               this.refreshSummary();
+               return;
+            }
+            this.session.selectMethod(index === 1 ? "spfc" :
+               index === 2 ? "linearFit" : "");
+            this.referenceCombo.enabled = index === 2;
+            this.refreshSummary();
+         }
+      };
+      methodRow.add(this.methodCombo, 100);
+      main.add(methodRow);
+
       var refRow = new HorizontalSizer;
       refRow.spacing = 6;
       var refLabel = new Label(this);
       refLabel.text = "LinearFit-Referenz";
       refRow.add(refLabel);
       this.referenceCombo = new ComboBox(this);
-      this.referenceCombo.addItem("Automatisch: niedrigster Median");
+      this.referenceCombo.addItem("Automatisch");
       this.referenceCombo.currentItem = 0;
       this.referenceCombo.enabled = false;
       this.referenceCombo.onItemSelected = index => {
@@ -121,7 +153,7 @@ class SlumDialog extends Dialog {
       this.prerequisite.onCheck = () => this.refreshSummary();
       main.add(this.prerequisite);
       this.registration = new CheckBox(this);
-      this.registration.text = "Gleiches registriertes Ausgaberaster trotz fehlender WCS-Daten bestätigt";
+      this.registration.text = "Gleiches registriertes Ausgaberaster trotz unsicherer WCS-Daten bestätigt";
       this.registration.visible = false;
       this.registration.onCheck = () => this.refreshSummary();
       main.add(this.registration);
@@ -129,7 +161,7 @@ class SlumDialog extends Dialog {
       this.report = new TextBox(this);
       this.report.readOnly = true;
       this.report.minHeight = 260;
-      this.report.text = "Dateien oder geöffnete Ansichten wählen und Analysieren starten. Danach Referenz und Sampling prüfen; LinearFit und Noise laufen bei der Ausgabe.";
+      this.report.text = "Dateien oder geöffnete Ansichten wählen und Analysieren starten. Danach SPFC-Status, Verfahren und Sampling prüfen; Normalisierung und Noise laufen bei der Ausgabe.";
       main.add(this.report, 100);
       this.status = new Label(this);
       this.status.text = "Bereit";
@@ -300,6 +332,7 @@ class SlumDialog extends Dialog {
       if (this.busy) { this.cancelRequested = true; return; }
       this.session.close();
       this.analyzed = false;
+      this.methodCombo.enabled = false;
       this.referenceCombo.enabled = false;
       this.saveButton.enabled = false;
       this.report.text = "Dateiauswahl geändert. Bitte erneut analysieren.";
@@ -313,6 +346,7 @@ class SlumDialog extends Dialog {
       this.analyzed = false;
       this.saveButton.enabled = false;
       this.analyzeButton.enabled = false;
+      this.methodCombo.enabled = false;
       this.referenceCombo.enabled = false;
       this.setInputsEnabled(false);
       this.status.text = "Prüfe Eingaben und Median…";
@@ -329,16 +363,21 @@ class SlumDialog extends Dialog {
          for (var j = 0; j < rows.length; ++j) this.referenceCombo.addItem(rows[j].id);
          this.referenceCombo.currentItem = override ?
             1 + rows.map(function(r){return r.id;}).indexOf(override) : 0;
-         this.referenceCombo.enabled = true;
+         this.methodCombo.currentItem = this.session.spfcAvailable ? 1 : 0;
+         this.methodCombo.enabled = true;
+         this.referenceCombo.enabled = false;
          this.suppress = false;
          this.registration.visible = !this.session.registrationCertain;
          this.refreshGroups();
          this.adjustToContents();
-         this.status.text = "Analyse abgeschlossen. Referenz und Sampling prüfen.";
+         this.status.text = this.session.spfcAvailable ?
+            "SPFC verfügbar. Sampling prüfen." :
+            "SPFC unvollständig. LinearFit ausdrücklich wählen oder SPFC nachholen.";
       } catch (error) {
          this.session.close();
          this.suppress = false;
          this.analyzed = false;
+         this.methodCombo.enabled = false;
          this.referenceCombo.enabled = false;
          var cancelled = error.message === "Vom Nutzer abgebrochen.";
          this.report.text = (cancelled ? "Analyse abgebrochen." :
@@ -404,7 +443,7 @@ class SlumDialog extends Dialog {
    refreshSummary() {
       if (this.suppress || !this.analyzed) return;
       if (this.busy) { this.saveButton.enabled = false; return; }
-      var lines = ["Eingaben / Referenz / Ausgabe", ""];
+      var lines = ["Eingaben / Normalisierung / Ausgabe", ""];
       var sampling = {};
       for (var i = 0; i < this.session.rows.length; ++i) {
          var row = this.session.rows[i];
@@ -413,12 +452,20 @@ class SlumDialog extends Dialog {
          lines.push("   Sampling " + sampling[row.id] + " (Header: " +
             (row.detectedSampling || "unbekannt") + ")  Median " +
             row.median.toPrecision(7));
+         lines.push("   SPFC: " + (row.spfc.valid ?
+            "gültig; Flux-Faktor " + row.spfc.scale.toPrecision(7) +
+            ", Normierung " + row.spfc.normalization : row.spfc.reason));
       }
       lines.push("");
-      lines.push("Referenzempfehlung: " + this.session.recommended +
-         "   Gewählte Referenz: " + this.session.reference);
+      if (!this.session.spfcAvailable)
+         lines.push("SPFC außerhalb des Skripts nachholen, danach erneut analysieren; oder LinearFit als Fallback ausdrücklich wählen.");
+      lines.push("Verfahren: " + (this.session.method === "spfc" ? "SPFC-Flux" :
+         this.session.method === "linearFit" ? "LinearFit (Fallback)" : "noch nicht gewählt"));
+      if (this.session.method === "linearFit")
+         lines.push("Referenzempfehlung: " + this.session.recommended +
+            "   Gewählte Referenz: " + this.session.reference);
       if (!this.session.registrationCertain)
-         lines.push("WCS reichen für den Rastervergleich nicht aus: Bestätigung erforderlich.");
+         lines.push("Registriertes Ausgaberaster anhand der WCS nicht sicher: Bestätigung erforderlich.");
       var valid = true;
       try {
          var shares = this.shares();
@@ -428,7 +475,7 @@ class SlumDialog extends Dialog {
                lines.push("Gruppe " + this.groupNames[g] + ": " +
                   (shares[this.groupNames[g]] * 100).toFixed(2) + "%");
       } catch (error) { valid = false; lines.push("Noch erforderlich: " + error.message); }
-      lines.push("LinearFit, Noise, count und Endgewichte: werden bei der Ausgabe berechnet.");
+      lines.push("Normalisierung, Noise, count und Endgewichte: werden bei der Ausgabe berechnet.");
       if (this.outputMode.currentItem === 0) {
          lines.push("Ausgabe: Datei " + this.outputEdit.text);
          if (!/\.xisf$/i.test(this.outputEdit.text.trim())) valid = false;
@@ -440,6 +487,7 @@ class SlumDialog extends Dialog {
          lines.push("Ausgabe: neue SLUM-Ansicht in PixInsight (keine Datei)");
       }
       if (!this.prerequisite.checked) valid = false;
+      if (!this.session.method) valid = false;
       if (!this.session.registrationCertain && !this.registration.checked) valid = false;
       this.report.text = lines.join("\n");
       this.saveButton.enabled = valid;
@@ -447,8 +495,12 @@ class SlumDialog extends Dialog {
 
    appendRunDetails() {
       var run = this.session.lastRun;
-      var lines = ["", "LinearFit-Referenz: " + run.reference,
-         "Noise nach LinearFit:"];
+      var lines = ["", "Verfahren: " + (run.method === "spfc" ? "SPFC-Flux" : "LinearFit")];
+      if (run.method === "linearFit") lines.push("LinearFit-Referenz: " + run.reference);
+      else lines.push("SPFC-Flux-Faktoren: " + run.rows.map(function (r) {
+         return r.id + " " + r.spfc.scale.toPrecision(7);
+      }).join("   "));
+      lines.push("Noise nach Normalisierung:");
       for (var i = 0; i < run.rows.length; ++i) {
          var row = run.rows[i];
          var warning = countWarning(row.countPercent);
@@ -469,6 +521,7 @@ class SlumDialog extends Dialog {
       this.lastOutputViewId = "";
       this.saveButton.enabled = false;
       this.analyzeButton.enabled = false;
+      this.methodCombo.enabled = false;
       this.setInputsEnabled(false);
       this.status.text = "Erzeuge SLUM…";
       processEvents();
@@ -494,10 +547,12 @@ class SlumDialog extends Dialog {
          }
          this.appendRunDetails();
          this.analyzed = false;
+         this.methodCombo.enabled = false;
          this.referenceCombo.enabled = false;
       } catch (error) {
          this.session.close();
          this.analyzed = false;
+         this.methodCombo.enabled = false;
          var cancelled = error.message === "Vom Nutzer abgebrochen.";
          this.report.text += cancelled ? "\n\nErstellung abgebrochen." :
             "\n\nFehler: " + error.message;

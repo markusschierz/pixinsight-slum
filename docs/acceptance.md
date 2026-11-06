@@ -24,3 +24,17 @@
 Die vier realen FITS-Header enthalten keine WCS-Lösung und laut Header jeweils 1×1-Binning. Deshalb verlangt das Skript vor ihrer Ausgabe die ausdrückliche Bestätigung des gemeinsamen registrierten Rasters. Ein realer 2×2-Master wurde nicht bereitgestellt; der Mischfall wurde mit synthetischen, auf dasselbe Raster gelegten XISF-Daten geprüft. Die Ansichtsauswahl wurde zusätzlich mit einer real geöffneten R-FITS-Ansicht geprüft.
 
 **Manuelle Gesamtabnahme abgeschlossen:** Der Nutzer hat am 6. November 2026 bestätigt, dass die Tab-Navigation im PixInsight-Dialog in Ordnung ist. Die automatisierte PixInsight-Sitzung konnte keine echten Tab-Ereignisse senden; die Fensterdarstellung und die aktivierten/gesperrten Zustände wurden zusätzlich automatisiert geprüft.
+
+## SPFC-Ergänzung (Issue #11)
+
+Die [technische Evidenz](spfc-evidence.md) dokumentiert PixInsights Metadaten und die bitgleichen Pixelpaare aus den vier realen SPFC-Dateien. Der SPFC-Weg skaliert temporäre Kopien einmalig mit dem kanalbezogenen `ScaleFactors[0]`; die gemeinsame `NormalizationFactor`-Normierung ist für alle Eingaben gleich.
+
+| Fall | Ergebnis |
+| --- | --- |
+| LRGB mit Datei-/Ansichtsmischung | L als geöffnete XISF-Ansicht, RGB als Dateien: alle vier SPFC-Werte gültig, SPFC automatisch gewählt. Neue `SLUM`-Ansicht, Pixel (4000,3000) `0,05947371944785118` gegenüber unabhängig berechnet `0,05947371879387232` (Float32-Differenz `6,54e-10`). L-Originalpixel unverändert. |
+| RGB ohne L als XISF | SPFC automatisch gewählt, niedrigster Median B als spätere Fallback-Empfehlung. Gespeicherte XISF wieder geöffnet; Pixeldifferenz `7,70e-10`. Temporäre Datei entfernt. |
+| Unvollständiges SPFC und Fallback | Reale FITS-Eingaben ohne SPFC: Kanalursache „Skalierungsfaktor fehlt“, Methode leer, „SLUM erstellen“ gesperrt. Erst „LinearFit verwenden“ aktiviert die Ausgabe. Bei L/R wird L vorgeschlagen; manueller Wechsel auf R nutzt dieselbe Analyse. |
+| Bestehender LinearFit-Pfad | Native Engine- und Dialogregression: gemischtes Sampling mit Anteilen 70/30, korrekte Pixel, Warn-/Bestätigungszustände, Abbruch ohne Datei/Teildatei/Arbeitsansicht. Node-Tests und JS-Syntaxprüfung bestanden. |
+| WCS der SPFC-Beispiele | Kleine Abweichungen unabhängiger Plate Solves lösen die ausdrückliche Rasterbestätigung aus. Ein Versatz über zwei Ausgabepixel bleibt ein Fehler. |
+
+Die visuelle Dialogprobe zeigt SPFC als ausgewähltes Verfahren, die Kanalwerte als Text, die gesperrte LinearFit-Referenz und die bestätigungspflichtige Registrierung. Die Tastaturreihenfolge der neu hinzugekommenen Methodenauswahl wurde in einer interaktiven PixInsight-Sitzung noch nicht manuell geprüft.

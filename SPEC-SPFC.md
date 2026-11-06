@@ -44,4 +44,6 @@ Der Ablauf funktioniert für zwei bis vier gewählte Kanäle, gemischte Datei-/A
 
 Ein falsch verstandener Faktor könnte Pixel doppelt skalieren und damit die Noise-Gewichtung verfälschen. Metadaten einer geladenen Ansicht können zudem vom aktuellen Pixelzustand abweichen. Beide Fälle verlangen eine belastbare Gültigkeitsprüfung statt einer stillen Annahme.
 
+**Technische Konkretisierung nach Datenprüfung:** Die vier bereitgestellten SPFC-XISF besitzen gegenüber ihren FITS-Ausgangsbildern bitgleiche Stichprobenpixel. Die Version-1-`ScaleFactors` sind kanalbezogen und werden mit derselben `NormalizationFactor`-Normierung gespeichert; die einmalige Skalierung findet deshalb auf Arbeitskopien statt. Bei unabhängigen, leicht unterschiedlichen WCS-Lösungen desselben Bildrasters ist bis zwei Ausgabepixel Differenz eine ausdrückliche Registrierungsbestätigung erforderlich; größere Versätze sperren die Ausgabe. [Nachweis und Grenzen](docs/spfc-evidence.md).
+
 **Offene fachliche Entscheidungen:** keine. Die Referenz-Übersteuerung wurde ausdrücklich bestätigt. **Offener technischer Nachweis:** PixInsight-SPFC-Metadaten, Faktor und Anwendung einschließlich bereits kalibrierter Pixel gemäß Akzeptanzkriterium 6. Er wird durch Quellen und geeignete Beispieldaten geklärt; er ist keine Rückfrage an den Nutzer und keine Erlaubnis für eine unbelegte Skalierung.

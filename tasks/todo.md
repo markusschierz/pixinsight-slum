@@ -113,3 +113,10 @@ Die spätere Nutzerergänzung erweitert die Ausgabe innerhalb des führenden Iss
 - [x] LinearFit, NoiseEvaluation, Gewichte und Warnungen beim Erzeugen der Datei oder Ansicht berechnen und im Ergebnisprotokoll anzeigen.
 - [x] Dateimodus, Ansichtsmodus, Abbruch und Originalschutz prüfen.
 - **Messung:** Reale LRGB-Stacks: Analyse 3,855 s, Referenzwechsel unter 1 ms, XISF-Ausgabe 44,248 s; Gewichte und Ausgabepixel wie zuvor.
+
+## SPFC-Erweiterung – führendes Issue #11
+
+- [x] **SPFC 1:** Installierte PixInsight-Quelle und `flux-samples/*_FLUX.xisf` auf vollständige Eigenschaften, Bedeutung der Skalierung und bereits veränderte Pixel prüfen; reproduzierbaren Nachweis dokumentieren. **Abnahme:** Eine eindeutige, mathematisch und anhand von Pixeln geprüfte Regel oder eine explizite Sperre für den SPFC-Weg. **Betroffen:** `docs/`, PixInsight-Probe. **Abhängigkeit:** keine.
+- [x] **SPFC 2:** Vollständig gültigen SPFC-Satz für Datei- und Ansichtsquellen erkennen und mit einheitlicher Flux-Regel zu einer SLUM verarbeiten; Noise erst auf fertigen Arbeitsbildern messen. **Abnahme:** SPFC-LRGB und SPFC-RGB ohne LinearFit, korrekte Pixel/Noise/Gewichte, Originale unverändert. **Betroffen:** Engine, Dialog, Tests. **Abhängigkeit:** SPFC 1.
+- [x] **SPFC 3:** Fehlende/ungültige Eigenschaften pro Kanal erklären und Ausgabe bis zum ausdrücklich gewählten LinearFit-Fallback sperren; L-Default oder Median-Default mit Override ermöglichen. **Abnahme:** Referenzwechsel ohne Neuanalyse; gewählte Referenz wird tatsächlich verwendet. **Betroffen:** Engine, Dialog, Tests. **Abhängigkeit:** SPFC 2.
+- [x] **SPFC 4:** Datei- und Ansichtsmodus, gemischtes Sampling, Fortschritt, Ergebnisprotokoll und Cleanup prüfen und dokumentieren. **Abnahme:** Fehler und Abbruch ohne Teilergebnis, Regression der bisherigen Wege. **Betroffen:** Engine, Dialog, Dokumentation, Tests. **Abhängigkeit:** SPFC 3.

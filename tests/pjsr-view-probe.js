@@ -1,6 +1,7 @@
 #engine v8
 #include "../src/slum-core.js"
 #include "../src/slum-stats.js"
+#include "../src/slum-spfc.js"
 #include "../src/slum-engine.js"
 let report = new File;
 report.createForWriting("/tmp/pjsr-view-probe.txt");
@@ -30,6 +31,7 @@ try {
    let lModified = l.isModified, rModified = r.isModified;
    let rows = session.analyze({ L: { source: "file", path: filePath },
       R: { source: "view", viewId: r.mainView.id } });
+   session.selectMethod("linearFit");
    report.outTextLn("mixedSources=" + rows.map(function(row){return row.sourceLabel}).join(";"));
    session.prepare();
    let weights = session.weights({L:"1x1",R:"1x1"},null);
