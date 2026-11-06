@@ -1,4 +1,4 @@
-// Native PixInsight dialog. Analysis stays in memory until Save or Cancel.
+// Native PixInsight dialog. Analysis stays in memory until output or cancel.
 class SlumDialog extends Dialog {
    constructor() {
       super();
@@ -14,6 +14,7 @@ class SlumDialog extends Dialog {
       this.busy = false;
       this.cancelRequested = false;
       this.closeAfterCancel = false;
+      this.lastOutputViewId = "";
 
       var main = new VerticalSizer;
       main.margin = 12;
@@ -31,13 +32,28 @@ class SlumDialog extends Dialog {
       var outRow = new HorizontalSizer;
       outRow.spacing = 6;
       var outLabel = new Label(this);
-      outLabel.text = "SLUM-Ziel";
+      outLabel.text = "Ausgabe";
       outLabel.minWidth = 60;
       outRow.add(outLabel);
+      this.outputMode = new ComboBox(this);
+      this.outputMode.addItem("Als Datei speichern");
+      this.outputMode.addItem("Als SLUM-Ansicht ausgeben");
+      this.outputMode.currentItem = 0;
+      this.outputMode.onItemSelected = () => this.outputModeChanged();
+      outRow.add(this.outputMode, 100);
+      main.add(outRow);
+
+      var fileRow = new HorizontalSizer;
+      fileRow.spacing = 6;
+      var fileLabel = new Label(this);
+      fileLabel.text = "XISF-Ziel";
+      fileLabel.minWidth = 60;
+      fileRow.add(fileLabel);
+      this.outputFileLabel = fileLabel;
       this.outputEdit = new Edit(this);
       this.outputEdit.toolTip = "Neue .xisf-Datei; vorhandene Dateien werden nicht überschrieben.";
       this.outputEdit.onTextUpdated = () => this.refreshSummary();
-      outRow.add(this.outputEdit, 100);
+      fileRow.add(this.outputEdit, 100);
       var outBrowse = new PushButton(this);
       outBrowse.text = "Wählen…";
       outBrowse.onClick = () => {
@@ -48,9 +64,9 @@ class SlumDialog extends Dialog {
          if (dialog.execute()) this.outputEdit.text = dialog.filePath;
          this.refreshSummary();
       };
-      outRow.add(outBrowse);
+      fileRow.add(outBrowse);
       this.outputBrowse = outBrowse;
-      main.add(outRow);
+      main.add(fileRow);
 
       var refRow = new HorizontalSizer;
       refRow.spacing = 6;
@@ -244,10 +260,20 @@ class SlumDialog extends Dialog {
       });
       this.outputEdit.enabled = enabled;
       this.outputBrowse.enabled = enabled;
+      this.outputMode.enabled = enabled;
       this.prerequisite.enabled = enabled;
       this.registration.enabled = enabled;
       for (var i = 0; i < this.shareRows.length; ++i)
          this.shareRows[i].edit.enabled = enabled;
+   }
+
+   outputModeChanged() {
+      var fileMode = this.outputMode.currentItem === 0;
+      this.outputFileLabel.visible = fileMode;
+      this.outputEdit.visible = fileMode;
+      this.outputBrowse.visible = fileMode;
+      this.adjustToContents();
+      this.refreshSummary();
    }
 
    config() {
@@ -403,11 +429,15 @@ class SlumDialog extends Dialog {
             return w.id + " " + (100 * w.weight).toFixed(3) + "%";
          }).join("   "));
       } catch (error) { valid = false; lines.push("Noch erforderlich: " + error.message); }
-      lines.push("Ausgabe: " + this.outputEdit.text);
-      if (!/\.xisf$/i.test(this.outputEdit.text.trim())) valid = false;
-      if (this.outputEdit.text && File.exists(this.outputEdit.text.trim())) {
-         valid = false;
-         lines.push("Ausgabedatei existiert bereits.");
+      if (this.outputMode.currentItem === 0) {
+         lines.push("Ausgabe: Datei " + this.outputEdit.text);
+         if (!/\.xisf$/i.test(this.outputEdit.text.trim())) valid = false;
+         if (this.outputEdit.text && File.exists(this.outputEdit.text.trim())) {
+            valid = false;
+            lines.push("Ausgabedatei existiert bereits.");
+         }
+      } else {
+         lines.push("Ausgabe: neue SLUM-Ansicht in PixInsight (keine Datei)");
       }
       if (!this.prerequisite.checked) valid = false;
       if (!this.session.registrationCertain && !this.registration.checked) valid = false;
@@ -419,6 +449,7 @@ class SlumDialog extends Dialog {
       this.busy = true;
       this.cancelRequested = false;
       this.closeAfterCancel = false;
+      this.lastOutputViewId = "";
       this.saveButton.enabled = false;
       this.analyzeButton.enabled = false;
       this.setInputsEnabled(false);
@@ -430,13 +461,22 @@ class SlumDialog extends Dialog {
             var id = this.session.rows[i].id;
             sampling[id] = this.channels[id].sampling.text;
          }
-         this.session.create(this.outputEdit.text.trim(), sampling, this.shares(),
-            this.session.registrationCertain || this.registration.checked,
-            stage => this.progress(stage));
+         if (this.outputMode.currentItem === 0) {
+            this.session.create(this.outputEdit.text.trim(), sampling, this.shares(),
+               this.session.registrationCertain || this.registration.checked,
+               stage => this.progress(stage));
+            this.report.text += "\n\nFertig: " + this.outputEdit.text.trim();
+            this.status.text = "SLUM-Datei gespeichert.";
+         } else {
+            var result = this.session.createView(sampling, this.shares(),
+               this.session.registrationCertain || this.registration.checked,
+               stage => this.progress(stage));
+            this.lastOutputViewId = result.viewId;
+            this.report.text += "\n\nFertig: SLUM-Ansicht " + result.viewId;
+            this.status.text = "SLUM-Ansicht ausgegeben: " + result.viewId;
+         }
          this.analyzed = false;
          this.referenceCombo.enabled = false;
-         this.report.text += "\n\nFertig: " + this.outputEdit.text.trim();
-         this.status.text = "SLUM gespeichert.";
       } catch (error) {
          this.session.close();
          this.analyzed = false;
