@@ -1,6 +1,6 @@
 # Aufgabenliste: PixInsight SLUM
 
-**Status:** Freigegeben am 6. November 2026; Aufgaben 1–8 sowie die ergänzte Quellenauswahl implementiert und geprüft. Aufgabe 9 wartet nur auf die manuelle Tastaturnavigation. [Abnahmeprotokoll](../docs/acceptance.md).
+**Status:** Freigegeben am 6. November 2026; Aufgaben 1–8 sowie die ergänzte Quellen- und Ausgabewahl implementiert und geprüft. Aufgabe 9 wartet nur auf die manuelle Tastaturnavigation. [Abnahmeprotokoll](../docs/acceptance.md).
 
 **Basis:** [freigegebene SPEC](../SPEC.md), [freigegebener Plan](plan.md), [führendes Issue #1](https://github.com/markusschierz/pixinsight-slum/issues/1).
 
@@ -96,3 +96,12 @@ Die spätere Nutzerergänzung erweitert die Quellenauswahl innerhalb des führen
 - [x] Aktuelle Ansichts-Pixel in temporäre Arbeitsbilder kopieren, ohne die Originalansicht zu bearbeiten oder zu schließen.
 - [x] Doppelte Ansichts-IDs sowie dieselbe Quelldatei als Datei und Ansicht abweisen; Quellenwechsel verwirft alte Analysewerte.
 - **Prüfung:** Node-Eingabeprüfung, native Datei-/Ansichts- und reine Ansichtsprobe, Dialogprobe mit Ansichtswechsel, Pixel-/`isModified`-Vergleich und gerendertes Layout.
+
+## PR 7 – Datei oder SLUM-Ansicht als Ausgabe
+
+Die spätere Nutzerergänzung erweitert die Ausgabe innerhalb des führenden Issues #1.
+
+- [x] Im Dialog zwischen **Als Datei speichern** und **Als SLUM-Ansicht ausgeben** wählen; nur im Dateimodus ist ein XISF-Ziel erforderlich.
+- [x] Dieselbe gewichtete PixelMath-Berechnung für beide Modi nutzen; die neue SLUM-Ansicht bleibt nach dem Aufräumen erhalten.
+- [x] Namenskollisionen mit `SLUM_1` usw. behandeln, beim Abbruch die neue Ansicht entfernen und Originale unverändert lassen.
+- **Prüfung:** Native PixInsight-Probe für Bildformat, Pixelwert, keine Datei im Ansichtsmodus, erhaltene Ansicht, Namenskollision, Abbruch und Dialogzustand; Regression des Dateimodus.

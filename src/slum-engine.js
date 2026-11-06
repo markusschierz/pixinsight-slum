@@ -237,23 +237,19 @@ SlumSession.prototype.weights = function (sampling, shares) {
    return computeWeights(members, shares);
 };
 
-SlumSession.prototype.create = function (path, sampling, shares, registrationConfirmed, progress) {
-   progress = progress || function () {};
+SlumSession.prototype.checkReady = function (registrationConfirmed) {
    if (!this.rows.length) throw new Error("Zuerst Bilder analysieren.");
    if (!this.registrationCertain && !registrationConfirmed)
       throw new Error("Gleiches registriertes Raster bitte ausdrücklich bestätigen.");
-   if (!/\.xisf$/i.test(path)) throw new Error("Ausgabe muss eine .xisf-Datei sein.");
-   if (File.exists(path)) throw new Error("Ausgabedatei existiert bereits.");
-   var weights = this.weights(sampling, shares);
+};
+
+SlumSession.prototype.renderOutput = function (weights, outputId) {
    var expression = weights.map(function (row) {
       var source = this.rows.filter(function (r) { return r.id === row.id; })[0];
       return "(" + row.weight.toPrecision(17) + "*" + source.view.id + ")";
    }, this).join("+");
-   var temporaryPath = path.replace(/\.xisf$/i, ".slum-partial.xisf");
-   if (File.exists(temporaryPath)) throw new Error("Temporärer Ausgabepfad ist bereits belegt.");
    var output = null;
    try {
-      progress("SLUM wird berechnet");
       var p = new PixelMath;
       p.expression = expression;
       p.useSingleExpression = true;
@@ -262,7 +258,6 @@ SlumSession.prototype.create = function (path, sampling, shares, registrationCon
       p.showNewImage = false;
       p.rescale = false;
       p.truncate = false;
-      var outputId = uniqueSlumViewId("SLUMOutput");
       p.newImageId = outputId;
       p.newImageColorSpace = PixelMath.Gray;
       p.newImageSampleFormat = PixelMath.f32;
@@ -271,6 +266,25 @@ SlumSession.prototype.create = function (path, sampling, shares, registrationCon
       if (output.mainView.image.numberOfChannels !== 1 || output.bitsPerSample !== 32 ||
           !output.isFloatSample)
          throw new Error("Ausgabeformat ist nicht 32-Bit-Float-Graustufen.");
+      return output;
+   } catch (error) {
+      closeWindow(output);
+      throw error;
+   }
+};
+
+SlumSession.prototype.create = function (path, sampling, shares, registrationConfirmed, progress) {
+   progress = progress || function () {};
+   this.checkReady(registrationConfirmed);
+   if (!/\.xisf$/i.test(path)) throw new Error("Ausgabe muss eine .xisf-Datei sein.");
+   if (File.exists(path)) throw new Error("Ausgabedatei existiert bereits.");
+   var weights = this.weights(sampling, shares);
+   var temporaryPath = path.replace(/\.xisf$/i, ".slum-partial.xisf");
+   if (File.exists(temporaryPath)) throw new Error("Temporärer Ausgabepfad ist bereits belegt.");
+   var output = null;
+   try {
+      progress("SLUM wird berechnet");
+      output = this.renderOutput(weights, uniqueSlumViewId("SLUMOutput"));
       progress("SLUM wird gespeichert");
       if (!output.saveAs(temporaryPath, false, false, true, true))
          throw new Error("XISF konnte nicht gespeichert werden.");
@@ -283,6 +297,32 @@ SlumSession.prototype.create = function (path, sampling, shares, registrationCon
       throw error;
    } finally {
       closeWindow(output);
+      this.close();
+   }
+};
+
+SlumSession.prototype.createView = function (sampling, shares, registrationConfirmed, progress) {
+   progress = progress || function () {};
+   this.checkReady(registrationConfirmed);
+   var weights = this.weights(sampling, shares);
+   var output = null;
+   var completed = false;
+   try {
+      progress("SLUM wird berechnet");
+      var outputId = "SLUM";
+      var n = 1;
+      for (var existing = View.viewById(outputId);
+           existing && !existing.isNull;
+           existing = View.viewById(outputId))
+         outputId = "SLUM_" + n++;
+      output = this.renderOutput(weights, outputId);
+      progress("SLUM-Ansicht wird ausgegeben");
+      output.show();
+      output.bringToFront();
+      completed = true;
+      return { viewId: outputId, weights: weights };
+   } finally {
+      if (!completed) closeWindow(output);
       this.close();
    }
 };
