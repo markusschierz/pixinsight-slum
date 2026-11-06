@@ -145,6 +145,9 @@ class SlumDialog extends Dialog {
          if (dialog.execute()) path.text = dialog.filePath;
       };
       row.add(browse);
+      var samplingLabel = new Label(this);
+      samplingLabel.text = "Sampling";
+      row.add(samplingLabel);
       var sampling = new Edit(this);
       sampling.minWidth = 70;
       sampling.toolTip = "Natives Sampling, z. B. 1x1 oder 2x2. Bei Resampling korrigieren.";
