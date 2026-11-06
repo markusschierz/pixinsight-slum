@@ -1,0 +1,33 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const { selectedChannels, samplingKey, nativeSampling, geometrySignature,
+  sameAstrometricPoints } = require('../src/slum-engine.js');
+
+test('accepts a two-channel subset and rejects duplicate paths', () => {
+  assert.deepEqual(selectedChannels({ R: { path: '/a.fit' }, B: { path: '/b.fit' } }).map(x => x.id), ['R', 'B']);
+  assert.throws(() => selectedChannels({ R: { path: '/a.fit' }, B: { path: '/a.fit' } }), /Dieselbe Datei/);
+  assert.throws(() => selectedChannels({ L: { path: '/a.fit' } }), /mindestens zwei/);
+});
+
+test('normalizes explicit native sampling and rejects missing sampling', () => {
+  assert.equal(samplingKey('2 × 2'), '2x2');
+  assert.equal(samplingKey('1,5x1,5'), '1.5x1.5');
+  assert.throws(() => samplingKey(''), /Sampling/);
+  assert.throws(() => samplingKey('0x2'), /positiv/);
+  assert.equal(nativeSampling({ XBINNING: '1', YBINNING: '2' }), '1x2');
+  assert.equal(nativeSampling({}), '');
+});
+
+test('requires complete matching WCS metadata for automatic registration assurance', () => {
+  assert.equal(geometrySignature({ CTYPE1: 'RA---TAN' }), '');
+  const header = { CTYPE1: 'RA---TAN', CTYPE2: 'DEC--TAN', CRPIX1: '1', CRPIX2: '2', CRVAL1: '3', CRVAL2: '4', CDELT1: '5', CDELT2: '6' };
+  assert.ok(geometrySignature(header));
+  assert.notEqual(geometrySignature(header), geometrySignature({ ...header, CRPIX1: '9' }));
+});
+
+test('detects a different astrometric raster and handles RA wraparound', () => {
+  const points = [[359.99999999, 1], [10, 2], [20, 3]];
+  assert.equal(sameAstrometricPoints(points, [[0.00000001, 1], [10, 2], [20, 3]]), true);
+  assert.equal(sameAstrometricPoints(points, [[0.1, 1], [10, 2], [20, 3]]), false);
+  assert.equal(sameAstrometricPoints(points, [[359.99999999, 1], [10, 2.1], [20, 3]]), false);
+});
