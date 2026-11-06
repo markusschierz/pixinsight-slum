@@ -43,6 +43,16 @@ try {
    report.outTextLn("output=" + result.mainView.image.numberOfChannels + ":" + result.bitsPerSample + ":" + result.isFloatSample);
    report.outTextLn("pixelDifference=" + Math.abs(expected-result.mainView.image.sample(40,60)));
    result.forceClose();
+   File.remove(output);
+   try { session.analyze({R:{path:paths[0]},B:{path:paths[1]}},"",function(stage){
+      if (stage === "Eingabe R geladen") throw new Error("test abort");
+   }); } catch(e) { report.outTextLn("analysisAbort="+String(e)+" windows="+session.windows.length); }
+   session.analyze({R:{path:paths[0]},B:{path:paths[1]}});
+   try { session.create(output,{R:"1x1",B:"2x2"},{"1x1":0.7,"2x2":0.3},true,
+      function(stage){if(stage === "Temporäre XISF gespeichert") throw new Error("test abort");}); }
+   catch(e){report.outTextLn("saveAbort="+String(e)+" output="+File.exists(output)+
+      " partial="+File.exists("/tmp/slum-test-output.slum-partial.xisf")+
+      " windows="+session.windows.length);}
 } catch (e) { report.outTextLn("ERROR=" + e.message + " STACK=" + e.stack); }
 finally {
    for (let i = 0; i < paths.length; ++i) if (File.exists(paths[i])) File.remove(paths[i]);

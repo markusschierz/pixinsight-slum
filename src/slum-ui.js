@@ -4,12 +4,16 @@ class SlumDialog extends Dialog {
       super();
       this.windowTitle = "SLUM – Super-Luminanz";
       this.userResizable = true;
+      this.minWidth = 760;
       this.session = new SlumSession;
       this.analyzed = false;
       this.suppress = false;
       this.channels = {};
       this.shareRows = [];
       this.groupNames = [];
+      this.busy = false;
+      this.cancelRequested = false;
+      this.closeAfterCancel = false;
 
       var main = new VerticalSizer;
       main.margin = 12;
@@ -101,7 +105,7 @@ class SlumDialog extends Dialog {
 
       this.report = new TextBox(this);
       this.report.readOnly = true;
-      this.report.minHeight = 220;
+      this.report.minHeight = 260;
       this.report.text = "Dateien wählen und Analysieren starten. Danach Referenz, Sampling und Gewichte prüfen.";
       main.add(this.report, 100);
       this.status = new Label(this);
@@ -118,7 +122,16 @@ class SlumDialog extends Dialog {
       buttons.add(this.saveButton);
       var cancelButton = new PushButton(this);
       cancelButton.text = "Schließen";
-      cancelButton.onClick = () => { this.session.close(); this.cancel(); };
+      cancelButton.onClick = () => {
+         if (this.busy) {
+            this.cancelRequested = true;
+            this.closeAfterCancel = true;
+            this.status.text = "Abbruch angefordert…";
+         } else {
+            this.session.close();
+            this.cancel();
+         }
+      };
       buttons.add(cancelButton);
       main.add(buttons);
       this.sizer = main;
@@ -168,6 +181,7 @@ class SlumDialog extends Dialog {
 
    invalidate() {
       if (this.suppress) return;
+      if (this.busy) { this.cancelRequested = true; return; }
       this.session.close();
       this.analyzed = false;
       this.referenceCombo.enabled = false;
@@ -177,11 +191,17 @@ class SlumDialog extends Dialog {
    }
 
    analyze(override) {
+      this.busy = true;
+      this.cancelRequested = false;
+      this.closeAfterCancel = false;
+      this.analyzed = false;
       this.saveButton.enabled = false;
+      this.analyzeButton.enabled = false;
+      this.referenceCombo.enabled = false;
       this.status.text = "Analysiere Bilder und LinearFit…";
       processEvents();
       try {
-         var rows = this.session.analyze(this.config(), override);
+         var rows = this.session.analyze(this.config(), override, stage => this.progress(stage));
          this.analyzed = true;
          this.suppress = true;
          for (var i = 0; i < rows.length; ++i)
@@ -199,12 +219,26 @@ class SlumDialog extends Dialog {
          this.adjustToContents();
          this.status.text = "Analyse abgeschlossen. Werte prüfen und SLUM erstellen.";
       } catch (error) {
+         this.session.close();
          this.suppress = false;
          this.analyzed = false;
          this.referenceCombo.enabled = false;
-         this.report.text = "Analyse fehlgeschlagen: " + error.message;
-         this.status.text = "Fehler: " + error.message;
+         var cancelled = error.message === "Vom Nutzer abgebrochen.";
+         this.report.text = (cancelled ? "Analyse abgebrochen." :
+            "Analyse fehlgeschlagen: " + error.message);
+         this.status.text = cancelled ? "Abgebrochen" : "Fehler: " + error.message;
+      } finally {
+         this.busy = false;
+         this.analyzeButton.enabled = true;
+         if (this.analyzed) this.refreshSummary();
+         if (this.closeAfterCancel) { this.session.close(); this.cancel(); }
       }
+   }
+
+   progress(stage) {
+      this.status.text = stage;
+      processEvents();
+      if (this.cancelRequested) throw new Error("Vom Nutzer abgebrochen.");
    }
 
    refreshGroups() {
@@ -251,6 +285,7 @@ class SlumDialog extends Dialog {
 
    refreshSummary() {
       if (this.suppress || !this.analyzed) return;
+      if (this.busy) { this.saveButton.enabled = false; return; }
       var lines = ["Eingaben / Statistik / Gewichte", ""];
       var sampling = {};
       for (var i = 0; i < this.session.rows.length; ++i) {
@@ -268,7 +303,7 @@ class SlumDialog extends Dialog {
       lines.push("Referenzempfehlung: " + this.session.recommended +
          "   Gewählte Referenz: " + this.session.reference);
       if (!this.session.registrationCertain)
-         lines.push("WCS unvollständig oder unterschiedlich: Rasterbestätigung erforderlich.");
+         lines.push("WCS reichen für den Rastervergleich nicht aus: Bestätigung erforderlich.");
       var valid = true;
       try {
          var shares = this.shares();
@@ -294,7 +329,11 @@ class SlumDialog extends Dialog {
    }
 
    create() {
+      this.busy = true;
+      this.cancelRequested = false;
+      this.closeAfterCancel = false;
       this.saveButton.enabled = false;
+      this.analyzeButton.enabled = false;
       this.status.text = "Erzeuge SLUM…";
       processEvents();
       try {
@@ -304,7 +343,8 @@ class SlumDialog extends Dialog {
             sampling[id] = this.channels[id].sampling.text;
          }
          this.session.create(this.outputEdit.text.trim(), sampling, this.shares(),
-            this.session.registrationCertain || this.registration.checked);
+            this.session.registrationCertain || this.registration.checked,
+            stage => this.progress(stage));
          this.analyzed = false;
          this.referenceCombo.enabled = false;
          this.report.text += "\n\nFertig: " + this.outputEdit.text.trim();
@@ -312,8 +352,14 @@ class SlumDialog extends Dialog {
       } catch (error) {
          this.session.close();
          this.analyzed = false;
-         this.report.text += "\n\nFehler: " + error.message;
-         this.status.text = "Fehler: " + error.message;
+         var cancelled = error.message === "Vom Nutzer abgebrochen.";
+         this.report.text += cancelled ? "\n\nErstellung abgebrochen." :
+            "\n\nFehler: " + error.message;
+         this.status.text = cancelled ? "Abgebrochen" : "Fehler: " + error.message;
+      } finally {
+         this.busy = false;
+         this.analyzeButton.enabled = true;
+         if (this.closeAfterCancel) this.cancel();
       }
    }
 }

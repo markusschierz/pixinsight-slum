@@ -1,7 +1,7 @@
 // Pure calculations shared by PixInsight and the Node test runner.
 function chooseReference(channels) {
    if (!channels || channels.length < 2 || channels.length > 4)
-      throw new Error("Select two to four channels.");
+      throw new Error("Bitte zwei bis vier Kanäle auswählen.");
    var order = { L: 0, R: 1, G: 2, B: 3 };
    var best = null;
    var seen = Object.create(null);
@@ -9,7 +9,7 @@ function chooseReference(channels) {
       var row = channels[i];
       if (!Object.prototype.hasOwnProperty.call(order, row.id) ||
           seen[row.id] || !isFinite(row.median))
-         throw new Error("Invalid channel or median.");
+         throw new Error("Ungültiger Kanal oder Medianwert.");
       seen[row.id] = true;
       if (best === null || row.median < best.median ||
           (row.median === best.median && order[row.id] < order[best.id]))
@@ -20,7 +20,7 @@ function chooseReference(channels) {
 
 function computeWeights(channels, shares) {
    if (!channels || channels.length < 2 || channels.length > 4)
-      throw new Error("Select two to four channels.");
+      throw new Error("Bitte zwei bis vier Kanäle auswählen.");
    var groups = Object.create(null);
    var groupNames = [];
    var seen = Object.create(null);
@@ -29,7 +29,7 @@ function computeWeights(channels, shares) {
       if (!/^[LRGB]$/.test(row.id) || seen[row.id] ||
           typeof row.group !== "string" || !row.group ||
           !isFinite(row.noise) || row.noise <= 0)
-         throw new Error("Invalid channel, group, or noise value.");
+         throw new Error("Ungültiger Kanal, Sampling-Gruppe oder Noise-Wert.");
       seen[row.id] = true;
       if (!Object.prototype.hasOwnProperty.call(groups, row.group)) {
          groups[row.group] = [];
@@ -38,16 +38,16 @@ function computeWeights(channels, shares) {
       groups[row.group].push(row);
    }
    if (groupNames.length > 1) {
-      if (!shares) throw new Error("Group shares must sum to 100%.");
+      if (!shares) throw new Error("Gruppenanteile müssen zusammen 100 % ergeben.");
       var shareSum = 0;
       for (var g = 0; g < groupNames.length; ++g) {
          var share = shares[groupNames[g]];
          if (!isFinite(share) || share < 0 || share > 1)
-            throw new Error("Invalid group share.");
+            throw new Error("Ungültiger Gruppenanteil.");
          shareSum += share;
       }
       if (Math.abs(shareSum - 1) > 1e-9)
-         throw new Error("Group shares must sum to 100%.");
+         throw new Error("Gruppenanteile müssen zusammen 100 % ergeben.");
    }
    var result = [];
    for (var j = 0; j < channels.length; ++j) {
