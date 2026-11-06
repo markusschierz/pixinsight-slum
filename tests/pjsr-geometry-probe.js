@@ -1,6 +1,7 @@
 #engine v8
 #include "../src/slum-core.js"
 #include "../src/slum-stats.js"
+#include "../src/slum-spfc.js"
 #include "../src/slum-engine.js"
 let report = new File;
 report.createForWriting("/tmp/pjsr-geometry-probe.txt");

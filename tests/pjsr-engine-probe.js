@@ -1,6 +1,7 @@
 #engine v8
 #include "../src/slum-core.js"
 #include "../src/slum-stats.js"
+#include "../src/slum-spfc.js"
 #include "../src/slum-engine.js"
 let report = new File;
 report.createForWriting("/tmp/pjsr-engine-probe.txt");
@@ -25,6 +26,7 @@ try {
    makeFile(paths[1], "B", 0.03, 2);
    let session = new SlumSession;
    let rows = session.analyze({R:{path:paths[0]},B:{path:paths[1]}});
+   session.selectMethod("linearFit");
    report.outTextLn("reference=" + session.recommended + " actual=" + session.reference);
    report.outTextLn("rows=" + rows.map(function(r){return r.id+":"+r.median+":"+r.noise+":"+r.sampling}).join(";"));
    try { session.validateMix({R:"",B:"2x2"},{"1x1":0.7,"2x2":0.3}); }
@@ -49,6 +51,7 @@ try {
       if (stage === "Eingabe R geladen") throw new Error("test abort");
    }); } catch(e) { report.outTextLn("analysisAbort="+String(e)+" windows="+session.windows.length); }
    session.analyze({R:{path:paths[0]},B:{path:paths[1]}});
+   session.selectMethod("linearFit");
    try { session.create(output,{R:"1x1",B:"2x2"},{"1x1":0.7,"2x2":0.3},true,
       function(stage){if(stage === "Temporäre XISF gespeichert") throw new Error("test abort");}); }
    catch(e){report.outTextLn("saveAbort="+String(e)+" output="+File.exists(output)+

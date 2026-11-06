@@ -1,6 +1,7 @@
 #engine v8
 #include "../src/slum-core.js"
 #include "../src/slum-stats.js"
+#include "../src/slum-spfc.js"
 #include "../src/slum-engine.js"
 #include "../src/slum-ui.js"
 let report = new File;
@@ -43,6 +44,7 @@ try {
       " sampling="+JSON.stringify(dialog.channels.R.sampling.text));
    dialog.channels.R.viewList.currentView=r.mainView;
    dialog.analyze("");
+   dialog.methodCombo.onItemSelected(2);
    dialog.shareRows[0].edit.text="70";
    dialog.shareRows[1].edit.text="30";
    dialog.prerequisite.checked=true;

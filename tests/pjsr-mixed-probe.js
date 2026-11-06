@@ -1,6 +1,7 @@
 #engine v8
 #include "../src/slum-core.js"
 #include "../src/slum-stats.js"
+#include "../src/slum-spfc.js"
 #include "../src/slum-engine.js"
 let report = new File;
 report.createForWriting("/tmp/pjsr-mixed-probe.txt");
@@ -28,6 +29,7 @@ try{
    let config={};
    for(let i=0;i<ids.length;++i)config[ids[i]]={path:makeFile(ids[i],i)};
    let rows=session.analyze(config);
+   session.selectMethod("linearFit");
    let sampling={L:"1x1",R:"2x2",G:"2x2",B:"2x2"};
    session.prepare();
    let weights=session.weights(sampling,{"1x1":0.7,"2x2":0.3});
