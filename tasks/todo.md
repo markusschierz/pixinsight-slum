@@ -1,6 +1,6 @@
 # Aufgabenliste: PixInsight SLUM
 
-**Status:** Entwurf zur Aufgabenfreigabe
+**Status:** Freigegeben am 6. November 2026
 
 **Basis:** [freigegebene SPEC](../SPEC.md), [freigegebener Plan](plan.md), [führendes Issue #1](https://github.com/markusschierz/pixinsight-slum/issues/1).
 
