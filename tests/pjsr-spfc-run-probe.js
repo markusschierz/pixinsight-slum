@@ -20,6 +20,7 @@ try {
    });
    report.outTextLn("analyzed method="+session.method+" available="+session.spfcAvailable+
       " recommended="+session.recommended+" valid="+rows.every(function(r){return r.spfc.valid}));
+   session.setLuminanceFraction(0.65);
    let samples = rows.map(function(r){return r.view.image.sample(4000,3000)});
    let result = session.createView({L:"1x1",R:"1x1",G:"1x1",B:"1x1"},null,true);
    output = View.viewById(result.viewId).window;
@@ -29,6 +30,8 @@ try {
       expected += samples[i]*rows[i].spfc.scale*weight;
    }
    report.outTextLn("created="+result.viewId+" method="+session.lastRun.method+
+      " lFraction="+session.lastRun.lFraction+
+      " rgbSum="+session.lastRun.rgbWeights.reduce(function(s,w){return s+w.weight},0)+
       " pixel="+output.mainView.image.sample(4000,3000)+" expected="+expected+
       " delta="+Math.abs(output.mainView.image.sample(4000,3000)-expected)+
       " originalUnchanged="+(original.mainView.image.sample(4000,3000)===before)+

@@ -19,8 +19,8 @@ function chooseReference(channels) {
 }
 
 function computeWeights(channels, shares) {
-   if (!channels || channels.length < 2 || channels.length > 4)
-      throw new Error("Bitte zwei bis vier Kanäle auswählen.");
+   if (!channels || channels.length < 1 || channels.length > 4)
+      throw new Error("Bitte ein bis vier Kanäle gewichten.");
    var groups = Object.create(null);
    var groupNames = [];
    var seen = Object.create(null);
@@ -70,5 +70,32 @@ function computeWeights(channels, shares) {
    return result;
 }
 
+function computeSlumMix(channels, shares, lFraction) {
+   if (!channels || channels.length < 2 || channels.length > 4)
+      throw new Error("Bitte zwei bis vier Kanäle auswählen.");
+   var hasL = channels.some(function (row) { return row.id === "L"; });
+   if (!hasL)
+      return { weights: computeWeights(channels, shares), rgbWeights: null,
+         lFraction: null };
+   if (typeof lFraction !== "number" || !isFinite(lFraction) ||
+       lFraction < 0.5 || lFraction > 0.8)
+      throw new Error("L-Anteil muss zwischen 50 und 80 % liegen.");
+   var luminance = channels.filter(function (row) { return row.id === "L"; });
+   var colors = channels.filter(function (row) { return row.id !== "L"; });
+   computeWeights(luminance, null); // validate L independently of RGB sampling
+   var rgbWeights = computeWeights(colors, shares);
+   var weights = channels.map(function (row) {
+      if (row.id === "L")
+         return { id: row.id, group: row.group, noise: row.noise,
+            weight: lFraction };
+      var rgb = rgbWeights.filter(function (item) { return item.id === row.id; })[0];
+      return { id: row.id, group: row.group, noise: row.noise,
+         weight: (1 - lFraction) * rgb.weight };
+   });
+   return { weights: weights, rgbWeights: rgbWeights,
+      lFraction: lFraction };
+}
+
 if (typeof module !== "undefined" && module.exports)
-   module.exports = { chooseReference: chooseReference, computeWeights: computeWeights };
+   module.exports = { chooseReference: chooseReference, computeWeights: computeWeights,
+      computeSlumMix: computeSlumMix };

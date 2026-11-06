@@ -20,6 +20,12 @@ try {
    report.outTextLn("spfc="+d.session.spfcAvailable+" method="+d.session.method+
       " selected="+d.methodCombo.currentItem+" ready="+d.saveButton.enabled+
       " referenceEnabled="+d.referenceCombo.enabled);
+   let rowsBefore=d.session.rows;
+   d.lShare.setValue(80);
+   d.lShare.onValueUpdated(80);
+   report.outTextLn("share="+d.session.lFraction+" sameAnalysis="+(d.session.rows===rowsBefore)+
+      " noiseDeferred="+rowsBefore.every(function(r){return r.noise===undefined})+
+      " summary80="+(d.report.text.indexOf("80% L + 20% RGBLUM")>=0));
    d.render().save("/tmp/pjsr-spfc-ui-probe.png");
    d.methodCombo.onItemSelected(2);
    d.referenceCombo.onItemSelected(2);

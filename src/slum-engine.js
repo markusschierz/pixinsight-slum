@@ -125,6 +125,8 @@ function SlumSession() {
    this.prepared = false;
    this.method = "";
    this.spfcAvailable = false;
+   this.lFraction = 0.7;
+   this.mix = null;
    this.lastRun = null;
 }
 
@@ -141,6 +143,7 @@ SlumSession.prototype.close = function () {
    this.prepared = false;
    this.method = "";
    this.spfcAvailable = false;
+   this.mix = null;
 };
 
 SlumSession.prototype.analyze = function (config, referenceOverride, progress) {
@@ -268,6 +271,13 @@ SlumSession.prototype.selectMethod = function (method) {
    this.method = method;
 };
 
+SlumSession.prototype.setLuminanceFraction = function (value) {
+   if (this.prepared) throw new Error("Nach der Normalisierung bitte erneut analysieren.");
+   if (typeof value !== "number" || !isFinite(value) || value < 0.5 || value > 0.8)
+      throw new Error("L-Anteil muss zwischen 50 und 80 % liegen.");
+   this.lFraction = value;
+};
+
 SlumSession.prototype.prepare = function (progress) {
    if (this.prepared) return;
    progress = progress || function () {};
@@ -300,9 +310,9 @@ SlumSession.prototype.prepare = function (progress) {
 
 SlumSession.prototype.validateMix = function (sampling, shares) {
    if (this.rows.length < 2) throw new Error("Zuerst Bilder analysieren.");
-   return computeWeights(this.rows.map(function (r) {
+   return computeSlumMix(this.rows.map(function (r) {
       return { id: r.id, group: samplingKey(sampling[r.id]), noise: 1 };
-   }), shares);
+   }), shares, this.lFraction);
 };
 
 SlumSession.prototype.weights = function (sampling, shares) {
@@ -310,11 +320,13 @@ SlumSession.prototype.weights = function (sampling, shares) {
    var members = this.rows.map(function (r) {
       return { id: r.id, group: samplingKey(sampling[r.id]), noise: r.noise };
    });
-   return computeWeights(members, shares);
+   this.mix = computeSlumMix(members, shares, this.lFraction);
+   return this.mix.weights;
 };
 
 SlumSession.prototype.captureRun = function (weights) {
    this.lastRun = { method: this.method, recommended: this.recommended, reference: this.reference,
+      lFraction: this.mix.lFraction, rgbWeights: this.mix.rgbWeights,
       weights: weights, rows: this.rows.map(function (r) {
          return { id: r.id, sourceLabel: r.sourceLabel, median: r.median,
             noise: r.noise, countPercent: r.countPercent, layers: r.layers,
@@ -329,10 +341,19 @@ SlumSession.prototype.checkReady = function (registrationConfirmed) {
 };
 
 SlumSession.prototype.renderOutput = function (weights, outputId) {
-   var expression = weights.map(function (row) {
+   var term = function (row) {
       var source = this.rows.filter(function (r) { return r.id === row.id; })[0];
       return "(" + row.weight.toPrecision(17) + "*" + source.view.id + ")";
-   }, this).join("+");
+   };
+   var expression;
+   if (this.mix && this.mix.lFraction !== null) {
+      var luminance = this.rows.filter(function (row) { return row.id === "L"; })[0];
+      var rgbExpression = this.mix.rgbWeights.map(term, this).join("+");
+      expression = "(" + this.mix.lFraction.toPrecision(17) + "*" + luminance.view.id +
+         ")+(" + (1 - this.mix.lFraction).toPrecision(17) + "*(" + rgbExpression + "))";
+   } else {
+      expression = weights.map(term, this).join("+");
+   }
    var output = null;
    try {
       var p = new PixelMath;

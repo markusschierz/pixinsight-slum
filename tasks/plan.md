@@ -68,3 +68,15 @@ Dieser Plan ist freigegeben. Die [Aufgabenliste](todo.md) ist der nächste Freig
 | **SPFC 4 – Abschluss** | Fortschritt, Ergebnisprotokoll, Fehler-/Abbruch-Cleanup, Dokumentation und Regression. | Datei- und Ansichtsmodus, fehlende/defekte Metadaten, Bild- und Dateivergleich, Node- und native PixInsight-Proben. | SPFC 3 |
 
 Die vier Slices bleiben im führenden Issue #11; es entstehen keine internen Issues. Nach jeweils einem End-to-End-Slice folgen fokussierte Tests. Die Planfreigabe für diese Erweiterung ist durch die ausdrückliche Aufforderung „planning-and-task-breakdown und setze um“ erteilt.
+
+## RGBLUM-Erweiterung (freigegeben, Issue #13)
+
+**Basis:** [SPEC-RGBLUM](../SPEC-RGBLUM.md). Ein fachliches Feature; keine neuen Issues für interne Arbeitsschritte. Bestehende PJSR-Architektur und CI bleiben erhalten.
+
+| Slice | Ergebnis / Komponenten | Prüfung | Abhängigkeit |
+| --- | --- | --- | --- |
+| **1 – Gewichtsregel** | `slum-core.js`: RGBLUM-interne Noise- und Gruppenanteile, danach L-Mischung mit `a`; Grenzwerte und Teilmengen. | Node-Tests für LRGB, L+ein Farbkanal, RGB-only und gemischtes RGB-Sampling. | — |
+| **2 – Ausgabepfad** | `slum-engine.js`: gleiche kanonische Regel für Vorprüfung und Endgewichte, PixelMath als zweistufige Formel, Protokolldaten. | Native PixInsight-Pixelprobe für SPFC und LinearFit; keine Zwischen-Ausgabe, Originalschutz. | 1 |
+| **3 – Dialog und Abschluss** | `slum-ui.js`: L-Anteil als NumericControl, RGB-Gruppenfelder, Status/Protokoll; README/Abnahme. | Render- und Zustandsprobe, 50/80-Grenzen, Datei-/Ansichtsmodus, Regression und CI. | 2 |
+
+**Risiken:** Verwechslung alter Gruppenanteile mit `a`, ungewollte Normalisierung bei Sliderwechsel und unbemerkt geänderte RGB-only-Ausgabe. Die Gewichtsrechnung wird deshalb zentralisiert; Native-Proben vergleichen Ausgabepixel mit einer unabhängig zusammengesetzten Formel. Ein zusammenhängender PR kann die drei Slices enthalten; jeder Slice erhält einen fokussierten Testcheckpoint.
