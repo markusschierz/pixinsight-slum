@@ -2,7 +2,7 @@
 
 **Status:** Fachlich freigegeben am 6. November 2026
 
-**Ergänzung:** Die später gewünschte Auswahl bereits geöffneter PixInsight-Hauptansichten pro Kanal ist aufgenommen.
+**Ergänzungen:** Geladene PixInsight-Hauptansichten sind als Quellen und eine SLUM-Ansicht ist als Ausgabe wählbar. Die spätere Ablaufkorrektur verschiebt LinearFit und NoiseEvaluation auf „SLUM erstellen“.
 
 **Fachliche Grundlage:** [PixInsight Super-Luminanz – Workflow und Berechnungen](docs/pixinsight_super_lum_workflow.md)
 
@@ -16,7 +16,7 @@ Der MVP liefert eine zusammenhängende Fähigkeit. Die folgenden Teile sind inne
 | Referenz und Fit | Referenz statistisch bestimmen, Übersteuerung erlauben und alle übrigen Kanäle per LinearFit anpassen | Eingabeprüfung |
 | Gewichtung und Ausgabe | NoiseEvaluation der tatsächlich kombinierten Bilder, Gewichtung für gleiches oder gemischtes Binning, SLUM-Ausgabe und Protokoll | Referenz und Fit |
 
-Reihenfolge: Eingabeprüfung → Referenz und Fit → Gewichtung und Ausgabe. Diese Teile sind keine separat auszuliefernden Produkte.
+Reihenfolge: Eingabeprüfung und Median → Referenzwahl → bei Ausgabe LinearFit, NoiseEvaluation, Gewichtung und SLUM. Diese Teile sind keine separat auszuliefernden Produkte.
 
 ## Zielgruppe und Problem
 
@@ -36,7 +36,7 @@ Erfolg bedeutet: Der Nutzer kann sowohl LRGB als auch eine Teilmenge wie RGB ohn
 4. **Rauschmessung:** NoiseEvaluation läuft nach LinearFit auf genau den Bildversionen, die anschließend kombiniert werden. Ungültige oder nichtpositive Noise-Werte stoppen den Lauf. `count(%)` dient nur als Qualitätsindikator: unter 50 % Warnung, unter 25 % deutliche Warnung; es verändert das Gewicht nicht.
 5. **Gleiches Sampling:** Für jeden Kanal gilt `wᵢ = 1 / noiseᵢ²`; die Gewichte werden auf Summe 1 normiert. SLUM ist die gewichtete Summe der gefitteten Bilder.
 6. **Gemischtes Binning:** Kanäle mit gleichem ursprünglichem Sampling bilden je eine Gruppe. **Nur innerhalb** einer Gruppe werden `1/noise²`-Gewichte verglichen und auf 1 normiert. Bei nur einer Gruppe beträgt deren Anteil automatisch 100 %. Bei mehreren Gruppen legt der Nutzer für jede Gruppe ausdrücklich einen Anteil an der Gesamtmischung fest; diese Anteile müssen zusammen 100 % ergeben. Das endgültige Gewicht eines Kanals ist `Gruppenanteil × normiertes Gewicht innerhalb der Gruppe`. Für eine Gruppe mit nur einem Kanal ist das interne Gewicht 1. Das Skript wählt keinen universellen Anteil zwischen unterschiedlichen Sampling-Gruppen. Beim Beispiel L 1×1 und RGB 2×2 kann der Nutzer etwa 70 % L und 30 % RGB wählen; dieser Wert ist keine feste Voreinstellung oder allgemeine Regel.
-7. **Ausgabe und Nachvollziehbarkeit:** Belichtungszeit, Anzahl Subs und SNR fließen nicht zusätzlich in die Gewichte ein. Der Nutzer wählt zwischen **Als Datei speichern** und **Als SLUM-Ansicht ausgeben**. Im Dateimodus entsteht genau eine neue lineare Graustufen-XISF mit 32-Bit-Fließkommawerten. Im Ansichtsmodus entsteht keine Datei; die neue Hauptansicht `SLUM` (bei Namenskollision mit Nummer) bleibt in PixInsight bestehen. PixelMath-Rescaling ist deaktiviert. Vor der Ausgabe sind gewählte Quellen (Dateipfad oder Ansichts-ID), empfohlene und tatsächliche Referenz samt Median, natives Sampling, Noise, `count(%)`, gegebenenfalls Gruppenanteile, endgültige Gewichte und Warnungen in der Bedienoberfläche sichtbar. Ein Protokoll in der Bedienoberfläche enthält diese Werte und den Ausgabepfad oder die Ergebnisansichts-ID; es wird keine zusätzliche Protokolldatei erstellt. LinearFit-Zwischenbilder und andere Hilfsdaten bleiben temporär und werden nach Erfolg, Abbruch oder Fehler entfernt. Originaldateien und ursprüngliche Bildansichten werden nie verändert oder gespeichert; vom Nutzer geöffnete Ansichten bleiben geöffnet.
+7. **Ausgabe und Nachvollziehbarkeit:** Belichtungszeit, Anzahl Subs und SNR fließen nicht zusätzlich in die Gewichte ein. Der Nutzer wählt zwischen **Als Datei speichern** und **Als SLUM-Ansicht ausgeben**. Im Dateimodus entsteht genau eine neue lineare Graustufen-XISF mit 32-Bit-Fließkommawerten. Im Ansichtsmodus entsteht keine Datei; die neue Hauptansicht `SLUM` (bei Namenskollision mit Nummer) bleibt in PixInsight bestehen. PixelMath-Rescaling ist deaktiviert. Vor der Ausgabe sind gewählte Quellen (Dateipfad oder Ansichts-ID), empfohlene und tatsächliche Referenz samt Median, natives Sampling und gegebenenfalls Gruppenanteile sichtbar. LinearFit, NoiseEvaluation und Gewichte werden erst bei der Ausgabe berechnet; das Ergebnisprotokoll enthält Noise, `count(%)`, Warnungen, endgültige Gewichte und den Ausgabepfad oder die Ergebnisansichts-ID. Es wird keine zusätzliche Protokolldatei erstellt. LinearFit-Zwischenbilder und andere Hilfsdaten bleiben temporär und werden nach Erfolg, Abbruch oder Fehler entfernt. Originaldateien und ursprüngliche Bildansichten werden nie verändert oder gespeichert; vom Nutzer geöffnete Ansichten bleiben geöffnet.
 
 ## Nutzungsabläufe
 
@@ -54,7 +54,7 @@ Erfolg bedeutet: Der Nutzer kann sowohl LRGB als auch eine Teilmenge wie RGB ohn
 
 **Gemischtes Binning:** Nutzer wählt bereits auf ein gemeinsames Ausgaberaster registrierte L- und RGB-Master mit unterschiedlichen ursprünglichen Binning-Werten. Das Skript zeigt die Sampling-Gruppen; der Nutzer trägt deren Anteile ein. RGB wird innerhalb seiner Gruppe nach Noise gewichtet, L erhält den festgelegten Gruppenanteil, und die fertige Summe wird als SLUM gespeichert. Entsprechend funktionieren andere Gruppenaufteilungen mit zwei bis vier Kanälen.
 
-**Unpassende Daten:** Bei abweichenden Bildmaßen oder Ausgaberaster, fehlender Sampling-Angabe, die nicht ergänzt wurde, oder Gruppenanteilen ungleich 100 % erfolgt keine Ausgabe. Bei unsicherer Noise-Schätzung zeigt das Skript die Warnung vor der Ausgabe an.
+**Unpassende Daten:** Bei abweichenden Bildmaßen oder Ausgaberaster, fehlender Sampling-Angabe, die nicht ergänzt wurde, oder Gruppenanteilen ungleich 100 % erfolgt keine Ausgabe. Eine ungültige Noise-Schätzung stoppt die Ausgabe; `count(%)`-Warnungen erscheinen im Ergebnisprotokoll.
 
 ## Akzeptanzkriterien
 
@@ -66,6 +66,7 @@ Erfolg bedeutet: Der Nutzer kann sowohl LRGB als auch eine Teilmenge wie RGB ohn
 6. Unterschiedliche Bildmaße oder Ausgaberaster, doppelt zugeordnete Dateien oder Ansichten, eine Datei und ihre geladene Ansicht als zwei Quellen, ein einzelner Kanal, eine geschlossene/fehlende Ansicht, unbekannt gebliebenes natives Sampling, ungültige Gruppenanteile und ungültige Noise-Werte führen zu einer konkreten Fehlermeldung ohne SLUM-Datei. Auch bei Abbruch oder Fehler bleiben Originale unverändert und temporäre Daten werden entfernt.
 7. `count(%)` unter 50 % beziehungsweise unter 25 % erzeugt die passende Warnstufe, ändert aber kein Gewicht.
 8. Der Nutzer kann aus dem Protokoll Eingaben, Referenzentscheidung, Sampling-Gruppen, Gruppenanteile, Noise-Werte, Gewichte und Ausgabepfad oder Ergebnisansichts-ID rekonstruieren.
+9. „Analysieren“ führt weder LinearFit noch NoiseEvaluation aus. Ein Referenzwechsel verwendet die bereits analysierten Daten ohne erneutes Laden oder Medianberechnen. Beide Ausgabemodi fitten und messen Noise genau einmal nach endgültiger Referenzwahl.
 
 ## Nicht-Ziele des MVP
 
@@ -86,6 +87,7 @@ Erfolg bedeutet: Der Nutzer kann sowohl LRGB als auch eine Teilmenge wie RGB ohn
 ## Fachliche Entscheidungen
 
 - **Bestätigt:** Die automatische LinearFit-Referenz nutzt den niedrigsten Median gültiger Pixel. Eine manuelle Übersteuerung ist Teil des MVP.
+- **Später korrigiert:** LinearFit und NoiseEvaluation starten erst bei Datei- oder Ansichtsausgabe. Die Voransicht der Noise-Werte und Endgewichte entfällt zugunsten eines schnellen Referenzwechsels; die Werte stehen im Ergebnisprotokoll.
 - **Bestätigt:** Gemischtes Binning wird im MVP unterstützt.
 - **Bestätigt:** Die Originaldateien bleiben unverändert.
 - **Später ergänzt:** Der Nutzer wählt zwischen einer fertigen SLUM-XISF-Datei und einer SLUM-Ansicht als Ergebnis. Der Ansichtsmodus schreibt keine Datei.
