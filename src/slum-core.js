@@ -4,10 +4,11 @@ function chooseReference(channels) {
       throw new Error("Select two to four channels.");
    var order = { L: 0, R: 1, G: 2, B: 3 };
    var best = null;
-   var seen = {};
+   var seen = Object.create(null);
    for (var i = 0; i < channels.length; ++i) {
       var row = channels[i];
-      if (!(row.id in order) || seen[row.id] || !isFinite(row.median))
+      if (!Object.prototype.hasOwnProperty.call(order, row.id) ||
+          seen[row.id] || !isFinite(row.median))
          throw new Error("Invalid channel or median.");
       seen[row.id] = true;
       if (best === null || row.median < best.median ||
@@ -20,12 +21,14 @@ function chooseReference(channels) {
 function computeWeights(channels, shares) {
    if (!channels || channels.length < 2 || channels.length > 4)
       throw new Error("Select two to four channels.");
-   var groups = {};
+   var groups = Object.create(null);
    var groupNames = [];
-   var seen = {};
+   var seen = Object.create(null);
    for (var i = 0; i < channels.length; ++i) {
       var row = channels[i];
-      if (seen[row.id] || !row.group || !isFinite(row.noise) || row.noise <= 0)
+      if (!/^[LRGB]$/.test(row.id) || seen[row.id] ||
+          typeof row.group !== "string" || !row.group ||
+          !isFinite(row.noise) || row.noise <= 0)
          throw new Error("Invalid channel, group, or noise value.");
       seen[row.id] = true;
       if (!Object.prototype.hasOwnProperty.call(groups, row.group)) {
