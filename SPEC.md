@@ -6,6 +6,8 @@
 
 **Fachliche Grundlage:** [PixInsight Super-Luminanz – Workflow und Berechnungen](docs/pixinsight_super_lum_workflow.md)
 
+**Freigegebene Erweiterung:** [SPFC-Flux als bevorzugte Normalisierung mit LinearFit-Fallback](SPEC-SPFC.md), geführt in [Issue #11](https://github.com/markusschierz/pixinsight-slum/issues/11). Die nachfolgende MVP-Beschreibung bleibt als Stand des ursprünglichen LinearFit-MVP erhalten; für die Erweiterung gelten die ergänzenden Verfahrens- und Referenzregeln der SPFC-Spec.
+
 ## Capability Map
 
 Der MVP liefert eine zusammenhängende Fähigkeit. Die folgenden Teile sind innerhalb dieser Fähigkeit separat prüfbar:
