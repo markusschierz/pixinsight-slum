@@ -1,16 +1,31 @@
 // PixInsight-only image lifecycle. All processing runs on disposable windows.
 function selectedChannels(config) {
    var result = [];
-   var seen = Object.create(null);
+   var seenPaths = Object.create(null);
+   var seenViews = Object.create(null);
    var ids = ["L", "R", "G", "B"];
    for (var i = 0; i < ids.length; ++i) {
       var id = ids[i];
       var row = config[id] || {};
-      var path = String(row.path || "").trim();
-      if (!path) continue;
-      if (seen[path]) throw new Error("Dieselbe Datei ist mehreren Kanälen zugeordnet.");
-      seen[path] = true;
-      result.push({ id: id, path: path, sampling: String(row.sampling || "").trim() });
+      var source = row.source || (row.viewId ? "view" : "file");
+      var selected = { id: id, source: source,
+         sampling: String(row.sampling || "").trim() };
+      if (source === "file") {
+         selected.path = String(row.path || "").trim();
+         if (!selected.path) continue;
+         if (seenPaths[selected.path])
+            throw new Error("Dieselbe Datei ist mehreren Kanälen zugeordnet.");
+         seenPaths[selected.path] = true;
+      } else if (source === "view") {
+         selected.viewId = String(row.viewId || "").trim();
+         if (!selected.viewId) continue;
+         if (seenViews[selected.viewId])
+            throw new Error("Dieselbe Ansicht ist mehreren Kanälen zugeordnet.");
+         seenViews[selected.viewId] = true;
+      } else {
+         throw new Error("Ungültiger Quelltyp für " + id + ".");
+      }
+      result.push(selected);
    }
    if (result.length < 2) throw new Error("Bitte mindestens zwei Kanäle auswählen.");
    return result;
@@ -105,25 +120,51 @@ SlumSession.prototype.analyze = function (config, referenceOverride, progress) {
    this.close();
    progress = progress || function () {};
    var selected = selectedChannels(config);
+   var sourceViews = [];
+   var sourcePaths = [];
+   for (var q = 0; q < selected.length; ++q) {
+      var input = selected[q];
+      if (input.source === "view") {
+         var loaded = View.viewById(input.viewId);
+         if (!loaded || loaded.isNull || !loaded.isMainView ||
+             !loaded.window || loaded.window.isNull)
+            throw new Error(input.id + ": geöffnete Hauptansicht fehlt: " + input.viewId);
+         sourceViews.push(loaded);
+         sourcePaths.push(loaded.window.filePath);
+      } else {
+         sourceViews.push(null);
+         sourcePaths.push(input.path);
+      }
+   }
    for (var a = 0; a < selected.length; ++a)
       for (var b = 0; b < a; ++b)
-         if (File.exists(selected[a].path) && File.exists(selected[b].path) &&
-             File.sameFile(selected[a].path, selected[b].path))
-            throw new Error("Dieselbe Datei ist mehreren Kanälen zugeordnet.");
+         if (sourcePaths[a] && sourcePaths[b] && File.exists(sourcePaths[a]) &&
+             File.exists(sourcePaths[b]) && File.sameFile(sourcePaths[a], sourcePaths[b]))
+            throw new Error("Dieselbe Quelldatei ist mehreren Kanälen zugeordnet.");
    var signatures = [];
    var astrometry = [];
    try {
       for (var i = 0; i < selected.length; ++i) {
          var row = selected[i];
-         if (!File.exists(row.path)) throw new Error(row.id + ": Datei fehlt: " + row.path);
-         var opened = ImageWindow.open(row.path);
-         if (opened.length !== 1) {
-            for (var n = 0; n < opened.length; ++n) closeWindow(opened[n]);
-            throw new Error(row.id + ": genau ein monochromes Bild pro Datei erforderlich.");
+         var sourceWindow, sourceView, openedByUs = false;
+         if (row.source === "file") {
+            if (!File.exists(row.path)) throw new Error(row.id + ": Datei fehlt: " + row.path);
+            var opened = ImageWindow.open(row.path);
+            if (opened.length !== 1) {
+               for (var n = 0; n < opened.length; ++n) closeWindow(opened[n]);
+               throw new Error(row.id + ": genau ein monochromes Bild pro Datei erforderlich.");
+            }
+            sourceWindow = opened[0];
+            sourceView = sourceWindow.mainView;
+            openedByUs = true;
+         } else {
+            sourceView = sourceViews[i];
+            if (!sourceView || sourceView.isNull)
+               throw new Error(row.id + ": gewählte Ansicht wurde geschlossen.");
+            sourceWindow = sourceView.window;
          }
-         var original = opened[0];
          try {
-            var image = original.mainView.image;
+            var image = sourceView.image;
             if (image.isColor || image.numberOfChannels !== 1 || !image.isReal)
                throw new Error(row.id + ": nur reelle Monochrombilder ohne Alphakanal erlaubt.");
             if (i === 0) {
@@ -131,20 +172,23 @@ SlumSession.prototype.analyze = function (config, referenceOverride, progress) {
                this.height = image.height;
             } else if (image.width !== this.width || image.height !== this.height)
                throw new Error(row.id + ": Bildabmessungen weichen ab.");
-            var keywords = keywordMap(original);
+            var keywords = keywordMap(sourceWindow);
             signatures.push(geometrySignature(keywords));
-            astrometry.push(astrometricPoints(original, image.width, image.height));
+            astrometry.push(astrometricPoints(sourceWindow, image.width, image.height));
             var work = new ImageWindow(image.width, image.height, 1, 32, true, false,
                "SLUMWork" + row.id);
             this.windows.push(work);
             work.mainView.beginProcess();
             try { work.mainView.image.assign(image); }
             finally { work.mainView.endProcess(); }
-            this.rows.push({ id: row.id, path: row.path, view: work.mainView,
+            this.rows.push({ id: row.id, source: row.source, path: row.path || "",
+               viewId: row.viewId || "", sourceLabel: row.source === "file" ?
+                  "Datei: " + row.path : "Ansicht: " + row.viewId,
+               view: work.mainView,
                sampling: row.sampling || nativeSampling(keywords),
                detectedSampling: nativeSampling(keywords) });
          } finally {
-            closeWindow(original);
+            if (openedByUs) closeWindow(sourceWindow);
          }
          progress("Eingabe " + row.id + " geladen");
       }
