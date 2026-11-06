@@ -1,0 +1,9 @@
+# Astronomische Eingabe- und Ausgabebilder bleiben außerhalb des Quell-Repositories.
+*.xisf
+*.fit
+*.fits
+*.fts
+
+# Temporäre lokale Dateien.
+*.tmp
+*.log
