@@ -1,6 +1,6 @@
 # Aufgabenliste: PixInsight SLUM
 
-**Status:** Freigegeben am 6. November 2026; Aufgaben 1–8 implementiert und geprüft. Aufgabe 9 wartet nur auf die manuelle Tastaturnavigation. [Abnahmeprotokoll](../docs/acceptance.md).
+**Status:** Freigegeben am 6. November 2026; Aufgaben 1–8 sowie die ergänzte Quellenauswahl implementiert und geprüft. Aufgabe 9 wartet nur auf die manuelle Tastaturnavigation. [Abnahmeprotokoll](../docs/acceptance.md).
 
 **Basis:** [freigegebene SPEC](../SPEC.md), [freigegebener Plan](plan.md), [führendes Issue #1](https://github.com/markusschierz/pixinsight-slum/issues/1).
 
@@ -87,3 +87,12 @@
 - **Betroffen:** Abnahmeprotokoll, gegebenenfalls fokussierte Testkorrekturen. **Abhängigkeit:** 8.
 
 **Checkpoint D:** Alle Akzeptanzkriterien der SPEC sind erfüllt. Danach kann die Implementierung zur Gesamtabnahme vorgelegt werden.
+
+## PR 6 – Dateien und geöffnete Ansichten als Quellen
+
+Die spätere Nutzerergänzung erweitert die Quellenauswahl innerhalb des führenden Issues #1, ohne ein neues Issue anzulegen.
+
+- [x] Je Kanal Datei oder bereits geöffnete PixInsight-Hauptansicht wählen; Datei- und Ansichtsquellen mischen.
+- [x] Aktuelle Ansichts-Pixel in temporäre Arbeitsbilder kopieren, ohne die Originalansicht zu bearbeiten oder zu schließen.
+- [x] Doppelte Ansichts-IDs sowie dieselbe Quelldatei als Datei und Ansicht abweisen; Quellenwechsel verwirft alte Analysewerte.
+- **Prüfung:** Node-Eingabeprüfung, native Datei-/Ansichts- und reine Ansichtsprobe, Dialogprobe mit Ansichtswechsel, Pixel-/`isModified`-Vergleich und gerendertes Layout.
