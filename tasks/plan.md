@@ -14,6 +14,12 @@ Der Plan bleibt beim festgelegten **PixInsight-Skript mit nativer PJSR-Oberfläc
 
 Die bestätigten fachlichen Regeln werden übernommen: automatische Referenz mit niedrigstem gültigem Median samt Override; Noise-Messung nach LinearFit auf den tatsächlich kombinierten Bildern; `1/noise²` innerhalb gleicher Sampling-Gruppen; vom Nutzer bestätigte Anteile zwischen Gruppen; Eingaben nur lesen; dauerhaft genau eine SLUM-XISF-Datei erzeugen.
 
+## Vorliegende Beispieldaten
+
+`sample-data/L.fit`, `R.fit`, `G.fit` und `B.fit` sind reale lineare Integrationsstacks mit je 9355 × 6252 Pixeln, 32-Bit-Float und laut FITS-Header jeweils 1×1-Binning. Sie decken den LRGB- und RGB-Pfad bei gleichem Sampling ab. Eine grobe bildbasierte Korrelationsprüfung fand für R, G und B relativ zu L keinen Versatz im 16-Pixel-Prüfraster; die Header enthalten jedoch keine WCS-Angaben, daher bleibt die Registrierung im PixInsight-Durchstich zu prüfen. Aus den Headern geht keine Gradientenkorrektur hervor. Die `ImageIntegration.noise`-Historienwerte ersetzen **nicht** die geforderte NoiseEvaluation nach LinearFit.
+
+Die vier Dateien umfassen zusammen rund 893 MB, bleiben lokal und werden nicht versioniert. Für die gemischte Binning-Abnahme ist ein weiterer Datensatz oder ein gezielt erzeugter Testfall nötig.
+
 ## Abhängigkeiten und kleine Slices
 
 | Slice / PR-Grenze | Ergebnis und betroffene Komponenten | Prüfung | Hängt ab von |

@@ -1,4 +1,5 @@
 # Astronomische Eingabe- und Ausgabebilder bleiben außerhalb des Quell-Repositories.
+sample-data/
 *.xisf
 *.fit
 *.fits
