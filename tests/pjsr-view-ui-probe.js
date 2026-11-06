@@ -45,8 +45,8 @@ try {
    dialog.channels.R.viewList.currentView=r.mainView;
    dialog.analyze("");
    dialog.methodCombo.onItemSelected(2);
-   dialog.shareRows[0].edit.text="70";
-   dialog.shareRows[1].edit.text="30";
+   report.outTextLn("oneRGBGroup="+(dialog.groupNames.length===1)+
+      " noGroupShare="+(dialog.shares()===null));
    dialog.prerequisite.checked=true;
    dialog.registration.checked=true;
    dialog.refreshSummary();
