@@ -9,8 +9,11 @@ class SlumDialog extends Dialog {
       this.analyzed = false;
       this.suppress = false;
       this.channels = {};
-      this.shareRows = [];
+      this.groupSliders = [];
       this.groupNames = [];
+      this.groupMembers = {};
+      this.groupPercents = [];
+      this.groupSharesChosen = false;
       this.busy = false;
       this.cancelRequested = false;
       this.closeAfterCancel = false;
@@ -145,29 +148,28 @@ class SlumDialog extends Dialog {
       main.add(this.lShareHint);
 
       this.shareLabel = new Label(this);
-      this.shareLabel.text = "Anteile der Sampling-Gruppen (zusammen 100 %)";
+      this.shareLabel.text = "Farbgruppen innerhalb RGBLUM verteilen";
       this.shareLabel.visible = false;
       main.add(this.shareLabel);
-      for (var s = 0; s < 4; ++s) {
-         var shareSizer = new HorizontalSizer;
-         shareSizer.spacing = 6;
-         var groupLabel = new Label(this);
-         groupLabel.minWidth = 90;
-         shareSizer.add(groupLabel);
-         var shareEdit = new Edit(this);
-         shareEdit.toolTip = "Anteil in Prozent, zum Beispiel 70";
-         shareEdit.onTextUpdated = () => this.refreshSummary();
-         shareSizer.add(shareEdit, 100);
-         var percent = new Label(this);
-         percent.text = "%";
-         shareSizer.add(percent);
-         groupLabel.visible = false;
-         shareEdit.visible = false;
-         percent.visible = false;
-         main.add(shareSizer);
-         this.shareRows.push({ label: groupLabel, edit: shareEdit, percent: percent });
+      this.shareHint = new Label(this);
+      this.shareHint.visible = false;
+      main.add(this.shareHint);
+      for (var s = 0; s < 2; ++s) {
+         let index = s;
+         var slider = new NumericControl(this);
+         slider.setRange(0, 100);
+         slider.setPrecision(0);
+         slider.slider.setRange(0, 100);
+         slider.setValue(s === 0 ? 50 : 33);
+         slider.toolTip = "Anteil dieser Sampling-Gruppe; die letzte Gruppe erhält automatisch den Rest.";
+         slider.visible = false;
+         slider.onValueUpdated = value => this.updateGroupSlider(index, value);
+         main.add(slider);
+         this.groupSliders.push(slider);
       }
-
+      this.groupRemainder = new Label(this);
+      this.groupRemainder.visible = false;
+      main.add(this.groupRemainder);
       this.prerequisite = new CheckBox(this);
       this.prerequisite.text = "Linearität, Registrierung, gleichen Ausschnitt und Gradientenkorrektur bestätigt";
       this.prerequisite.onCheck = () => this.refreshSummary();
@@ -180,7 +182,7 @@ class SlumDialog extends Dialog {
 
       this.report = new TextBox(this);
       this.report.readOnly = true;
-      this.report.minHeight = 260;
+      this.report.minHeight = 200;
       this.report.text = "Dateien oder geöffnete Ansichten wählen und Analysieren starten. Danach SPFC-Status, Verfahren und Sampling prüfen; Normalisierung und Noise laufen bei der Ausgabe.";
       main.add(this.report, 100);
       this.status = new Label(this);
@@ -282,7 +284,7 @@ class SlumDialog extends Dialog {
       row.add(samplingLabel);
       var sampling = new Edit(this);
       sampling.minWidth = 70;
-      sampling.toolTip = "Natives Sampling, z. B. 1x1 oder 2x2. Bei Resampling korrigieren.";
+      sampling.toolTip = "Natives Sampling/Binning, z. B. 1x1, 2x2 oder 3x3. Bei Resampling korrigieren.";
       sampling.onTextUpdated = () => this.refreshGroups();
       row.add(sampling);
       main.add(row);
@@ -320,8 +322,8 @@ class SlumDialog extends Dialog {
       this.outputMode.enabled = enabled;
       this.prerequisite.enabled = enabled;
       this.registration.enabled = enabled;
-      for (var i = 0; i < this.shareRows.length; ++i)
-         this.shareRows[i].edit.enabled = enabled;
+      for (var i = 0; i < this.groupSliders.length; ++i)
+         this.groupSliders[i].enabled = enabled && this.analyzed;
       this.lShare.enabled = enabled && this.analyzed;
    }
 
@@ -355,6 +357,7 @@ class SlumDialog extends Dialog {
       this.analyzed = false;
       this.lShare.visible = false;
       this.lShareHint.visible = false;
+      this.hideGroupControls();
       this.methodCombo.enabled = false;
       this.referenceCombo.enabled = false;
       this.saveButton.enabled = false;
@@ -368,6 +371,7 @@ class SlumDialog extends Dialog {
       this.closeAfterCancel = false;
       this.analyzed = false;
       this.groupNames = [];
+      this.groupSharesChosen = false;
       this.saveButton.enabled = false;
       this.analyzeButton.enabled = false;
       this.methodCombo.enabled = false;
@@ -403,6 +407,7 @@ class SlumDialog extends Dialog {
          this.analyzed = false;
          this.lShare.visible = false;
          this.lShareHint.visible = false;
+         this.hideGroupControls();
          this.methodCombo.enabled = false;
          this.referenceCombo.enabled = false;
          var cancelled = error.message === "Vom Nutzer abgebrochen.";
@@ -424,51 +429,117 @@ class SlumDialog extends Dialog {
       if (this.cancelRequested) throw new Error("Vom Nutzer abgebrochen.");
    }
 
+   hideGroupControls() {
+      this.shareLabel.visible = false;
+      this.shareHint.visible = false;
+      this.groupRemainder.visible = false;
+      for (var i = 0; i < this.groupSliders.length; ++i)
+         this.groupSliders[i].visible = false;
+   }
+
    refreshGroups() {
       if (this.suppress || !this.analyzed) return;
       var hasL = this.session.rows.some(function (row) { return row.id === "L"; });
       this.lShare.visible = hasL;
       this.lShareHint.visible = hasL;
       var groups = [];
+      var members = {};
       for (var i = 0; i < this.session.rows.length; ++i) {
          var row = this.session.rows[i];
          if (hasL && row.id === "L") continue;
          var value = this.channels[row.id].sampling.text;
          try {
             var key = samplingKey(value);
-            if (groups.indexOf(key) < 0) groups.push(key);
+            if (groups.indexOf(key) < 0) {
+               groups.push(key);
+               members[key] = [];
+            }
+            members[key].push(row.id);
          } catch (_) { /* Error is shown in summary. */ }
       }
-      var old = {};
-      for (var k = 0; k < this.groupNames.length; ++k)
-         old[this.groupNames[k]] = this.shareRows[k].edit.text;
+      var unchanged = groups.length === this.groupNames.length &&
+         groups.every(function (key, index) { return key === this.groupNames[index]; }, this);
       this.groupNames = groups;
-      this.shareLabel.text = hasL ? "Anteile innerhalb RGBLUM (zusammen 100 %)" :
-         "Anteile der Sampling-Gruppen (zusammen 100 %)";
+      this.groupMembers = members;
+      if (!unchanged) {
+         this.groupPercents = groups.length === 3 ? [33, 33] : [50];
+         this.groupSharesChosen = false;
+      }
+      this.shareLabel.text = hasL ? "Farbgruppen innerhalb RGBLUM verteilen" :
+         "Sampling-Gruppen innerhalb SLUM verteilen";
       this.shareLabel.visible = groups.length > 1;
-      for (var j = 0; j < this.shareRows.length; ++j) {
-         var visible = groups.length > 1 && j < groups.length;
-         var item = this.shareRows[j];
-         item.label.visible = visible;
-         item.edit.visible = visible;
-         item.percent.visible = visible;
-         item.label.text = visible ? groups[j] : "";
+      this.shareHint.visible = groups.length > 1;
+      this.groupRemainder.visible = groups.length > 1;
+      for (var j = 0; j < this.groupSliders.length; ++j) {
+         var visible = groups.length > 1 && j < groups.length - 1;
+         this.groupSliders[j].visible = visible;
+         if (!visible) continue;
+         this.groupSliders[j].label.text = this.groupTitle(groups[j]) +
+            (hasL ? " – Anteil an RGBLUM (%)" : " – Anteil an SLUM (%)");
          this.suppress = true;
-         item.edit.text = visible ? (old[groups[j]] || "") : "";
+         this.groupSliders[j].setValue(this.groupPercents[j]);
          this.suppress = false;
       }
+      if (hasL && groups.length === 1) {
+         var lSampling = this.channels.L.sampling.text;
+         this.lShareHint.text = this.groupTitle(groups[0]) + ": RGBLUM nach Noise. " +
+            "L (" + lSampling.replace("x", "×") + ") wird über den L-Anteil oben gemischt.";
+      } else {
+         this.lShareHint.text = "RGBLUM erhält den Rest; R/G/B werden darin nach Noise gewichtet.";
+      }
+      this.refreshGroupRemainder();
+      this.refreshSummary();
+      this.adjustToContents();
+   }
+
+   groupTitle(key) {
+      return (this.groupMembers[key] || []).join("/") +
+         " (Sampling " + key.replace("x", "×") + ")";
+   }
+
+   percentText(value) {
+      return value.toFixed(2).replace(/\.00$/, "");
+   }
+
+   refreshGroupRemainder() {
+      if (this.groupNames.length < 2) return;
+      var used = this.groupPercents.reduce(function (sum, value) { return sum + value; }, 0);
+      this.groupRemainder.text = this.groupTitle(this.groupNames[this.groupNames.length - 1]) +
+         " erhält automatisch " + (100 - used) + " %.";
+   }
+
+   updateGroupSlider(index, value) {
+      if (this.suppress || this.busy || !this.analyzed ||
+          index >= this.groupNames.length - 1) return;
+      this.groupPercents[index] = Math.max(0, Math.min(100, Math.round(value)));
+      var excess = this.groupPercents.reduce(function (sum, part) { return sum + part; }, 0) - 100;
+      if (excess > 0) {
+         this.suppress = true;
+         for (var i = this.groupPercents.length - 1; i >= 0 && excess > 0; --i) {
+            if (i === index) continue;
+            var reduction = Math.min(excess, this.groupPercents[i]);
+            this.groupPercents[i] -= reduction;
+            this.groupSliders[i].setValue(this.groupPercents[i]);
+            excess -= reduction;
+         }
+         this.suppress = false;
+      }
+      this.groupSharesChosen = true;
+      this.refreshGroupRemainder();
       this.refreshSummary();
    }
 
    shares() {
       if (this.groupNames.length <= 1) return null;
+      if (!this.groupSharesChosen)
+         throw new Error("Bitte die Aufteilung mit dem Gruppenregler festlegen.");
       var shares = {};
-      for (var i = 0; i < this.groupNames.length; ++i) {
-         var text = this.shareRows[i].edit.text.trim().replace(",", ".");
-         if (!text || !/^\d+(?:\.\d+)?$/.test(text))
-            throw new Error("Bitte Anteil für " + this.groupNames[i] + " eingeben.");
-         shares[this.groupNames[i]] = Number(text) / 100;
+      var used = 0;
+      for (var i = 0; i < this.groupNames.length - 1; ++i) {
+         used += this.groupPercents[i];
+         shares[this.groupNames[i]] = this.groupPercents[i] / 100;
       }
+      shares[this.groupNames[this.groupNames.length - 1]] = (100 - used) / 100;
       return shares;
    }
 
@@ -476,6 +547,16 @@ class SlumDialog extends Dialog {
       if (this.suppress || !this.analyzed) return;
       if (this.busy) { this.saveButton.enabled = false; return; }
       var hasL = this.session.rows.some(function (row) { return row.id === "L"; });
+      if (this.groupNames.length > 1)
+         this.shareHint.text = hasL ?
+            "Nur den RGBLUM-Rest aufteilen: hier " +
+               (100 * (1 - this.session.lFraction)).toFixed(0) +
+               "% der fertigen SLUM. " +
+               (this.groupSharesChosen ? "Letzte Gruppe = Rest." :
+                  "Regler bewegen; letzte Gruppe = Rest.") :
+            "SLUM zwischen Sampling-Gruppen aufteilen. " +
+               (this.groupSharesChosen ? "Letzte Gruppe = Rest." :
+                  "Regler bewegen; letzte Gruppe = Rest.");
       var lines = ["Eingaben / Normalisierung / Ausgabe", ""];
       var sampling = {};
       for (var i = 0; i < this.session.rows.length; ++i) {
@@ -510,8 +591,12 @@ class SlumDialog extends Dialog {
          if (this.groupNames.length > 1)
             for (var g = 0; g < this.groupNames.length; ++g)
                lines.push((hasL ? "RGBLUM-Gruppe " : "Gruppe ") +
-                  this.groupNames[g] + ": " +
-                  (shares[this.groupNames[g]] * 100).toFixed(2) + "%");
+                  this.groupTitle(this.groupNames[g]) + ": " +
+                  (shares[this.groupNames[g]] * 100).toFixed(0) + "%" +
+                  (hasL ? " von RGBLUM = " +
+                     this.percentText(shares[this.groupNames[g]] *
+                        (1 - this.session.lFraction) * 100) +
+                     "% der fertigen SLUM" : ""));
       } catch (error) { valid = false; lines.push("Noch erforderlich: " + error.message); }
       lines.push("Normalisierung, Noise, count und Endgewichte: werden bei der Ausgabe berechnet.");
       if (this.outputMode.currentItem === 0) {

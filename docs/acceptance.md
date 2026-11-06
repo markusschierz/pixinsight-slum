@@ -52,3 +52,9 @@ Die visuelle Dialogprobe zeigt SPFC als ausgewähltes Verfahren, die Kanalwerte 
 | Dialog und aufgeschobene Berechnung | Native UI-Probe: L-Slider auf 80 %, dieselbe Analyseinstanz, Noise noch nicht gemessen, Zusammenfassung `80 % L + 20 % RGBLUM`; LinearFit-Override bleibt ohne Neuanalyse möglich. RGB-only-Dialogregression und LinearFit-Ansichtsprobe bestanden. |
 
 Die Abnahme umfasst Node-Tests der Grenzwerte 50/80 %, ungültiger Werte, L mit einem Farbkanal, RGB-only und gemischter RGB-Gruppen sowie native PixInsight-Proben für SPFC und LinearFit. Das neue UI wurde als PixInsight-Dialog gerendert und visuell geprüft.
+
+### Gruppen-Slider und Bin 3×3
+
+Die native Probe mit **L 2×2 und R/G/B 3×3** liest die Sampling-Werte aus den synthetischen XISF-Headern, zeigt eine einzige RGB-Gruppe und verlangt keinen Gruppenanteil. Bei `a=0,60` entstehen L `0,60` und RGB zusammen `0,40`; die XISF-Pixelabweichung beträgt `3,63e-10`. Die native Dialogprobe zeigt den erklärenden Text und eine freigegebene Ausgabe ohne Gruppen-Slider.
+
+Bei **zwei verschiedenen RGB-Gruppen** ersetzt ein Prozent-Slider die zwei Textfelder: R 1×1 erhält 40 % von RGBLUM, G/B 2×2 automatisch 60 %. Die Zusammenfassung weist für `a=0,70` außerdem 12 % beziehungsweise 18 % an der fertigen SLUM aus. Bei **drei RGB-Gruppen** erzeugen zwei Slider die Aufteilung 30/40/30; beim Überschreiten von 100 % wird der andere Slider automatisch begrenzt. Ohne ausdrückliche Slider-Bewegung bleibt die Ausgabe bei mehreren Gruppen gesperrt. RGB-only-Dateiausgabe, Datei-/Ansichtsmischung, Referenzwechsel ohne Neuanalyse und unveränderte Originale wurden erneut nativ geprüft.

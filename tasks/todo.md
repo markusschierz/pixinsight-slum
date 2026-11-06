@@ -127,3 +127,5 @@ Die spätere Nutzerergänzung erweitert die Ausgabe innerhalb des führenden Iss
 - [x] **2 – Ausgabepfad:** Vorprüfung, Endgewichte, PixelMath und Ergebnisdaten über dieselbe Regel führen; SPFC und LinearFit nativ prüfen. **Betroffen:** `src/slum-engine.js`, native Proben. **Abhängigkeit:** 1.
 - [x] **3 – Dialog:** Prozent-Slider, Erklärung, RGB-Gruppen und Protokoll in den nativen Dialog aufnehmen und rendern. **Betroffen:** `src/slum-ui.js`, UI-Probe. **Abhängigkeit:** 2.
 - [x] **4 – Abschluss:** Datei-/Ansichtsmodi, Fehler/Cleanup, Originalschutz, Tests und Dokumentation prüfen; PR mit CI. **Betroffen:** README, Abnahme, Tests. **Abhängigkeit:** 3.
+
+- [x] **UI-Nachschärfung (Issue #15):** RGB-Gruppen per Slider mit automatisch berechnetem Rest verteilen, Kanal-/Sampling-Zuordnung und SLUM-Wirkung erläutern, L 2×2/RGB 3×3 sowie drei Farbgruppen nativ prüfen. **Betroffen:** Dialog, Proben, Dokumentation.

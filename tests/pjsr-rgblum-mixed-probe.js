@@ -63,17 +63,39 @@ try {
       dialog.analyze("");
       dialog.methodCombo.currentItem=2;
       dialog.methodCombo.onItemSelected(2);
-      dialog.shareRows[0].edit.text="40";
-      dialog.shareRows[1].edit.text="60";
+      let analyzedRows=dialog.session.rows;
+      let unchosen=!dialog.groupSharesChosen;
+      dialog.groupSliders[0].setValue(40);
+      dialog.groupSliders[0].onValueUpdated(40);
       dialog.prerequisite.checked=true;
       dialog.registration.checked=true;
       dialog.refreshSummary();
       report.outTextLn("groups="+dialog.groupNames.join(",")+
          " label="+dialog.shareLabel.text+
          " ready="+dialog.saveButton.enabled+
-         " groupReport="+(dialog.report.text.indexOf("RGBLUM-Gruppe 1x1: 40.00%")>=0)+
+         " slider40="+(dialog.groupSliders[0].value===40)+
+         " remainder60="+(dialog.groupRemainder.text.indexOf("60 %")>=0)+
+         " explicit="+unchosen+
+         " sameAnalysis="+(dialog.session.rows===analyzedRows)+
+         " noiseDeferred="+analyzedRows.every(function(row){return row.noise===undefined})+
+         " groupReport="+(dialog.report.text.indexOf("RGBLUM-Gruppe R (Sampling 1×1): 40% von RGBLUM = 12% der fertigen SLUM")>=0)+
          " mixReport="+(dialog.report.text.indexOf("SLUM = 70% L + 30% RGBLUM")>=0));
       dialog.render().save("/tmp/pjsr-rgblum-mixed-probe.png");
+      dialog.channels.B.sampling.text="3x3";
+      dialog.refreshGroups();
+      dialog.groupSliders[0].setValue(80);
+      dialog.groupSliders[0].onValueUpdated(80);
+      dialog.groupSliders[1].setValue(40);
+      dialog.groupSliders[1].onValueUpdated(40);
+      let clamped=dialog.groupPercents[0]===60 && dialog.groupPercents[1]===40;
+      dialog.groupSliders[0].setValue(30);
+      dialog.groupSliders[0].onValueUpdated(30);
+      let threeShares=dialog.shares();
+      report.outTextLn("threeGroups="+dialog.groupNames.join(",")+
+         " clamped="+clamped+" shares="+
+         [threeShares["1x1"],threeShares["2x2"],threeShares["3x3"]].join(",")+
+         " ready="+dialog.saveButton.enabled);
+      dialog.render().save("/tmp/pjsr-rgblum-three-groups.png");
       dialog.session.close();
    } finally {dialog.session.close();}
 } catch(e){report.outTextLn("ERROR="+e+" STACK="+e.stack);}

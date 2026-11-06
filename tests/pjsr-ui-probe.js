@@ -35,8 +35,8 @@ try {
    dialog.methodCombo.onItemSelected(2);
    report.outTextLn("reference=" + dialog.session.reference + " groups=" + dialog.groupNames.join(","));
    report.outTextLn("withoutSharesEnabled=" + dialog.saveButton.enabled);
-   dialog.shareRows[0].edit.text = "70";
-   dialog.shareRows[1].edit.text = "30";
+   dialog.groupSliders[0].setValue(70);
+   dialog.groupSliders[0].onValueUpdated(70);
    dialog.refreshSummary();
    report.outTextLn("withoutConfirmationsEnabled=" + dialog.saveButton.enabled);
    dialog.prerequisite.checked = true;
@@ -48,7 +48,7 @@ try {
    let analyzedRows = dialog.session.rows;
    dialog.referenceCombo.onItemSelected(2);
    report.outTextLn("override=" + dialog.session.reference + " shares=" +
-      dialog.shareRows[0].edit.text + "," + dialog.shareRows[1].edit.text +
+      (100 * dialog.shares()["1x1"]) + "," + (100 * dialog.shares()["2x2"]) +
       " reusedRows=" + (dialog.session.rows === analyzedRows));
    dialog.refreshSummary();
    report.outTextLn("afterOverrideEnabled=" + dialog.saveButton.enabled);
