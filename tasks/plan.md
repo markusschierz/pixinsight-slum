@@ -1,6 +1,6 @@
 # Umsetzungsplan: PixInsight SLUM
 
-**Status:** Entwurf zur Planfreigabe
+**Status:** Freigegeben am 6. November 2026
 
 **Fachliche Basis:** [freigegebene SPEC](../SPEC.md), [Super-Luminanz-Workflow](../docs/pixinsight_super_lum_workflow.md)
 
@@ -48,4 +48,4 @@ Die Oberfläche folgt Auswahl → Analyse → Prüfung der Referenz und Gewichte
 
 ## Freigabegrenze
 
-Dieser Plan ersetzt den früheren Planentwurf. Die Arbeit stoppt hier zur **Planfreigabe**. Implementierung und PRs beginnen erst danach.
+Dieser Plan ist freigegeben. Die [Aufgabenliste](todo.md) ist der nächste Freigabeschritt. Implementierung und PRs beginnen erst nach ihrer Freigabe.
