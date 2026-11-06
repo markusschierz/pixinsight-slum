@@ -1,6 +1,7 @@
 #engine v8
 #include "../src/slum-core.js"
 #include "../src/slum-stats.js"
+#include "../src/slum-spfc.js"
 #include "../src/slum-engine.js"
 #include "../src/slum-ui.js"
 let report = new File;
@@ -24,6 +25,7 @@ try {
    let config={L:{source:"view",viewId:l.mainView.id},
       R:{source:"view",viewId:r.mainView.id}};
    let rows=session.analyze(config);
+   session.selectMethod("linearFit");
    report.outTextLn("afterAnalyze reference="+session.reference+
       " noisePending="+rows.every(function(row){return row.noise === undefined})+
       " unfitR="+(rows[1].view.image.sample(40,60)===r.mainView.image.sample(40,60)));
@@ -45,6 +47,7 @@ try {
    dialog.channels.R.viewList.currentView=r.mainView;
    dialog.outputMode.currentItem=1;
    dialog.analyze("");
+   dialog.methodCombo.onItemSelected(2);
    let firstRows=dialog.session.rows;
    dialog.referenceCombo.onItemSelected(2);
    report.outTextLn("uiSwitch reference="+dialog.session.reference+

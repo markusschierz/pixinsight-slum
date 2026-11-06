@@ -1,6 +1,7 @@
 #engine v8
 #include "../src/slum-core.js"
 #include "../src/slum-stats.js"
+#include "../src/slum-spfc.js"
 #include "../src/slum-engine.js"
 let report = new File;
 report.createForWriting("/tmp/pjsr-real-probe.txt");
@@ -18,6 +19,7 @@ try {
       L:{path:root+"L.fit"}, R:{path:root+"R.fit"},
       G:{path:root+"G.fit"}, B:{path:root+"B.fit"}
    });
+   session.selectMethod("linearFit");
    report.outTextLn("analysisSeconds=" + (Date.now()-analysisStart)/1000 +
       " fitDeferred=" + rows.every(function(r){return r.noise===undefined}));
    report.outTextLn("reference=" + session.recommended + " certain=" + session.registrationCertain);
@@ -56,6 +58,7 @@ try {
    File.remove(output);
    rows = session.analyze({ R:{path:root+"R.fit"},
       G:{path:root+"G.fit"}, B:{path:root+"B.fit"} }, "R");
+   session.selectMethod("linearFit");
    report.outTextLn("RGB recommended=" + session.recommended + " actual=" + session.reference);
    let rgbWeights = session.create(output,{R:"1x1",G:"1x1",B:"1x1"},null,true);
    report.outTextLn("RGB weights=" + rgbWeights.map(function(w){return w.id+":"+w.weight}).join(","));

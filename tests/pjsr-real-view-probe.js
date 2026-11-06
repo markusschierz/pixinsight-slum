@@ -1,6 +1,7 @@
 #engine v8
 #include "../src/slum-core.js"
 #include "../src/slum-stats.js"
+#include "../src/slum-spfc.js"
 #include "../src/slum-engine.js"
 let report = new File;
 report.createForWriting("/tmp/pjsr-real-view-probe.txt");
@@ -15,6 +16,7 @@ try {
    let modified = original.isModified;
    let rows = session.analyze({ L:{source:"file",path:root+"L.fit"},
       R:{source:"view",viewId:original.mainView.id} });
+   session.selectMethod("linearFit");
    report.outTextLn("sources="+rows.map(function(r){return r.sourceLabel}).join(";"));
    report.outTextLn("reference="+session.recommended);
    session.prepare();

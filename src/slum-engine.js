@@ -90,6 +90,26 @@ function sameAstrometricPoints(a, b) {
    return true;
 }
 
+function nearAstrometricPoints(a, b, width, height) {
+   // Independent plate solves can differ slightly even when the pixels are
+   // registered. Up to two output pixels requires explicit user confirmation.
+   var raSpan = Math.abs(a[0][0] - a[1][0]);
+   raSpan = Math.min(raSpan, 360 - raSpan);
+   var dec = (a[0][1] + a[1][1]) * Math.PI / 360;
+   var scale = Math.sqrt(Math.pow(raSpan * Math.cos(dec), 2) +
+      Math.pow(a[0][1] - a[1][1], 2)) /
+      Math.sqrt(Math.pow(width / 2, 2) + Math.pow(height / 2, 2));
+   if (!isFinite(scale) || scale <= 0) return false;
+   for (var i = 0; i < a.length; ++i) {
+      var dra = Math.abs(a[i][0] - b[i][0]);
+      dra = Math.min(dra, 360 - dra);
+      var delta = Math.sqrt(Math.pow(dra * Math.cos(a[i][1] * Math.PI / 180), 2) +
+         Math.pow(a[i][1] - b[i][1], 2));
+      if (delta > 2 * scale) return false;
+   }
+   return true;
+}
+
 function closeWindow(window) {
    if (window && !window.isNull) window.forceClose();
 }
@@ -103,6 +123,8 @@ function SlumSession() {
    this.width = 0;
    this.height = 0;
    this.prepared = false;
+   this.method = "";
+   this.spfcAvailable = false;
    this.lastRun = null;
 }
 
@@ -117,6 +139,8 @@ SlumSession.prototype.close = function () {
    this.width = 0;
    this.height = 0;
    this.prepared = false;
+   this.method = "";
+   this.spfcAvailable = false;
 };
 
 SlumSession.prototype.analyze = function (config, referenceOverride, progress) {
@@ -177,6 +201,7 @@ SlumSession.prototype.analyze = function (config, referenceOverride, progress) {
             } else if (image.width !== this.width || image.height !== this.height)
                throw new Error(row.id + ": Bildabmessungen weichen ab.");
             var keywords = keywordMap(sourceWindow);
+            var spfc = readSpfc(sourceView, row.source === "view" && sourceWindow.isModified);
             signatures.push(geometrySignature(keywords));
             astrometry.push(astrometricPoints(sourceWindow, image.width, image.height));
             var work = new ImageWindow(image.width, image.height, 1, 32, true, false,
@@ -189,6 +214,7 @@ SlumSession.prototype.analyze = function (config, referenceOverride, progress) {
                viewId: row.viewId || "", sourceLabel: row.source === "file" ?
                   "Datei: " + row.path : "Ansicht: " + row.viewId,
                view: work.mainView,
+               spfc: spfc,
                sampling: row.sampling || nativeSampling(keywords),
                detectedSampling: nativeSampling(keywords) });
          } finally {
@@ -198,15 +224,26 @@ SlumSession.prototype.analyze = function (config, referenceOverride, progress) {
       }
       var complete = signatures.filter(function (s) { return !!s; });
       var solved = astrometry.filter(function (a) { return !!a; });
-      if (complete.some(function (s) { return s !== complete[0]; }) ||
-          solved.some(function (a) { return !sameAstrometricPoints(a, solved[0]); }))
-         throw new Error("WCS-Metadaten zeigen unterschiedliche Ausgaberaster.");
-      this.registrationCertain = solved.length === astrometry.length ||
-         complete.length === signatures.length;
+      if (solved.length === astrometry.length) {
+         if (solved.some(function (a) {
+            return !nearAstrometricPoints(a, solved[0], this.width, this.height);
+         }, this)) throw new Error("WCS-Metadaten zeigen einen Versatz von mehr als zwei Pixeln.");
+         this.registrationCertain = solved.every(function (a) {
+            return sameAstrometricPoints(a, solved[0]);
+         });
+      } else {
+         if (complete.some(function (s) { return s !== complete[0]; }) ||
+             solved.some(function (a) { return !sameAstrometricPoints(a, solved[0]); }))
+            throw new Error("WCS-Metadaten zeigen unterschiedliche Ausgaberaster.");
+         this.registrationCertain = complete.length === signatures.length;
+      }
       var medians = nativeCommonMedians(this.rows.map(function (r) { return r.view; }));
       progress("Median berechnet");
       for (var m = 0; m < this.rows.length; ++m) this.rows[m].median = medians[m];
-      this.recommended = chooseReference(this.rows);
+      this.spfcAvailable = checkSpfcSet(this.rows);
+      this.method = this.spfcAvailable ? "spfc" : "";
+      this.recommended = this.rows.some(function (r) { return r.id === "L"; }) ?
+         "L" : chooseReference(this.rows);
       this.selectReference(referenceOverride || this.recommended);
       return this.rows;
    } catch (error) {
@@ -222,14 +259,29 @@ SlumSession.prototype.selectReference = function (id) {
    this.reference = id;
 };
 
+SlumSession.prototype.selectMethod = function (method) {
+   if (this.prepared) throw new Error("Nach der Normalisierung bitte erneut analysieren.");
+   if (method !== "" && method !== "spfc" && method !== "linearFit")
+      throw new Error("Ungültiges Normalisierungsverfahren.");
+   if (method === "spfc" && !this.spfcAvailable)
+      throw new Error("SPFC ist nicht für alle gewählten Kanäle gültig.");
+   this.method = method;
+};
+
 SlumSession.prototype.prepare = function (progress) {
    if (this.prepared) return;
    progress = progress || function () {};
    if (!this.reference) throw new Error("Zuerst Referenz auswählen.");
+   if (!this.method) throw new Error("SPFC nachholen oder LinearFit ausdrücklich wählen.");
    var reference = this.rows.filter(function (r) { return r.id === this.reference; }, this)[0];
    for (var k = 0; k < this.rows.length; ++k) {
       var target = this.rows[k];
-      if (target.id !== this.reference) {
+      if (this.method === "spfc") {
+         progress("SPFC-Flux " + target.id + " wird skaliert");
+         target.view.beginProcess(UndoFlag.NoSwapFile);
+         try { target.view.image.apply(target.spfc.scale, ImageOp.Mul); }
+         finally { target.view.endProcess(); }
+      } else if (target.id !== this.reference) {
          progress("LinearFit " + target.id + " auf " + this.reference);
          var fit = new LinearFit;
          fit.referenceViewId = reference.view.id;
@@ -262,10 +314,11 @@ SlumSession.prototype.weights = function (sampling, shares) {
 };
 
 SlumSession.prototype.captureRun = function (weights) {
-   this.lastRun = { recommended: this.recommended, reference: this.reference,
+   this.lastRun = { method: this.method, recommended: this.recommended, reference: this.reference,
       weights: weights, rows: this.rows.map(function (r) {
          return { id: r.id, sourceLabel: r.sourceLabel, median: r.median,
-            noise: r.noise, countPercent: r.countPercent, layers: r.layers };
+            noise: r.noise, countPercent: r.countPercent, layers: r.layers,
+            spfc: r.spfc };
       }) };
 };
 
@@ -368,4 +421,5 @@ SlumSession.prototype.createView = function (sampling, shares, registrationConfi
 if (typeof module !== "undefined" && module.exports)
    module.exports = { selectedChannels: selectedChannels, samplingKey: samplingKey,
       nativeSampling: nativeSampling, geometrySignature: geometrySignature,
-      sameAstrometricPoints: sameAstrometricPoints };
+      sameAstrometricPoints: sameAstrometricPoints,
+      nearAstrometricPoints: nearAstrometricPoints };

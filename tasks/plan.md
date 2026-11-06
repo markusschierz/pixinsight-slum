@@ -55,3 +55,16 @@ Die Oberfläche folgt Auswahl → Analyse von Eingaben und Median → Prüfung v
 ## Freigabegrenze
 
 Dieser Plan ist freigegeben. Die [Aufgabenliste](todo.md) ist der nächste Freigabeschritt. Implementierung und PRs beginnen erst nach ihrer Freigabe.
+
+## SPFC-Erweiterung (freigegeben, Issue #11)
+
+**Basis:** [SPEC-SPFC](../SPEC-SPFC.md), vier lokale `flux-samples/*_FLUX.xisf` und die installierte PixInsight-Version. Die bestehende PJSR-Architektur, Quellen- und Ausgabewahl, Sampling-Gruppen und Originalschutz bleiben maßgeblich. Dieser Zusatz ersetzt keine abgeschlossene Aufgabe des ursprünglichen Plans.
+
+| Slice / PR-Grenze | Ergebnis und Komponenten | Prüfung / Risiko | Abhängigkeit |
+| --- | --- | --- | --- |
+| **SPFC 1 – fachlicher Skalierungsnachweis** | PCL:SPFC-Eigenschaften und Pixelzustand der vier XISF mit PixInsight prüfen; Formel und Gültigkeitsgrenze in `docs/` dokumentieren. | Faktor darf nicht doppelt oder in falscher Richtung angewendet werden; bei fehlendem Nachweis SPFC-Ausgabe gesperrt. | — |
+| **SPFC 2 – vollständiger SPFC-Lauf** | `slum-engine.js`: Metadaten je Datei/Ansicht prüfen, alle Kanäle einheitlich auf Flux-Skala bringen, erst dann Noise/PixelMath; `slum-ui.js`: Verfahren und Kanalstatus anzeigen. | Native LRGB/RGB-Probe, Pixelstichprobe, Endgewichte, keine LinearFit-Ausführung und unveränderte Originale. | SPFC 1 |
+| **SPFC 3 – expliziter LinearFit-Fallback** | Methodenauswahl und Ausgabe-Sperre bei ungültigem SPFC; L als Default bei vorhandenem L, sonst Median; Override ohne erneute Analyse. | Teilmengen, gemischte Datei-/Ansichtsquellen und Binning-Gruppen; Fallback nur nach bewusster Wahl. | SPFC 2 |
+| **SPFC 4 – Abschluss** | Fortschritt, Ergebnisprotokoll, Fehler-/Abbruch-Cleanup, Dokumentation und Regression. | Datei- und Ansichtsmodus, fehlende/defekte Metadaten, Bild- und Dateivergleich, Node- und native PixInsight-Proben. | SPFC 3 |
+
+Die vier Slices bleiben im führenden Issue #11; es entstehen keine internen Issues. Nach jeweils einem End-to-End-Slice folgen fokussierte Tests. Die Planfreigabe für diese Erweiterung ist durch die ausdrückliche Aufforderung „planning-and-task-breakdown und setze um“ erteilt.

@@ -1,6 +1,7 @@
 #engine v8
 #include "../src/slum-core.js"
 #include "../src/slum-stats.js"
+#include "../src/slum-spfc.js"
 #include "../src/slum-engine.js"
 #include "../src/slum-ui.js"
 let report = new File;
@@ -31,6 +32,7 @@ try {
    dialog.channels.B.path.text = inputs[1];
    dialog.outputEdit.text = output;
    dialog.analyze("");
+   dialog.methodCombo.onItemSelected(2);
    report.outTextLn("reference=" + dialog.session.reference + " groups=" + dialog.groupNames.join(","));
    report.outTextLn("withoutSharesEnabled=" + dialog.saveButton.enabled);
    dialog.shareRows[0].edit.text = "70";
@@ -53,7 +55,7 @@ try {
    dialog.render().save("/tmp/slum-ui-probe.png");
    dialog.create();
    report.outTextLn("created=" + File.exists(output) + " status=" + dialog.status.text);
-   report.outTextLn("resultHasNoise=" + (dialog.report.text.indexOf("Noise nach LinearFit:")>=0) +
+   report.outTextLn("resultHasNoise=" + (dialog.report.text.indexOf("Noise nach Normalisierung:")>=0) +
       " resultHasWeights=" + (dialog.report.text.indexOf("Endgewichte:")>=0));
    File.remove(output);
    let originalProgress = dialog.progress;
