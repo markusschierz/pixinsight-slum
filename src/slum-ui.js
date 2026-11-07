@@ -3,6 +3,7 @@ class SlumDialog extends Dialog {
    constructor() {
       super();
       this.windowTitle = "SLUM – Super-Luminanz";
+      this.labelWidth = 150;
       this.userResizable = true;
       this.minWidth = 760;
       this.session = new SlumSession;
@@ -16,7 +17,7 @@ class SlumDialog extends Dialog {
       this.lastOutputViewId = "";
 
       var main = new VerticalSizer;
-      main.margin = 12;
+      main.margin = 16;
       main.spacing = 8;
       var intro = new Label(this);
       intro.useRichText = true;
@@ -25,8 +26,9 @@ class SlumDialog extends Dialog {
          "Alle Eingaben müssen registriert, gleich beschnitten und gradientenkorrigiert sein.";
       main.add(intro);
 
+      var sources = this.addGroup(main, "Master (2–4 Kanäle)");
       var ids = ["L", "R", "G", "B"];
-      for (var i = 0; i < ids.length; ++i) this.addChannel(main, ids[i]);
+      for (var i = 0; i < ids.length; ++i) this.addChannel(sources, ids[i]);
 
       var analysisRow = new HorizontalSizer;
       analysisRow.addStretch();
@@ -34,12 +36,15 @@ class SlumDialog extends Dialog {
       this.analyzeButton.text = "Analysieren";
       this.analyzeButton.onClick = () => this.analyze("");
       analysisRow.add(this.analyzeButton);
-      main.add(analysisRow);
+      sources.add(analysisRow);
+
+      var mix = this.addGroup(main, "Mischung");
+      var output = this.addGroup(main, "Ausgabe");
 
       var outRow = new HorizontalSizer;
       outRow.spacing = 6;
       var outLabel = new Label(this);
-      outLabel.text = "Ausgabe";
+      outLabel.text = "Modus";
       outLabel.minWidth = 60;
       outRow.add(outLabel);
       this.outputMode = new ComboBox(this);
@@ -84,6 +89,7 @@ class SlumDialog extends Dialog {
       methodRow.spacing = 6;
       var methodLabel = new Label(this);
       methodLabel.text = "Normalisierung";
+      methodLabel.minWidth = this.labelWidth;
       methodRow.add(methodLabel);
       this.methodCombo = new ComboBox(this);
       this.methodCombo.addItem("Verfahren wählen");
@@ -110,12 +116,13 @@ class SlumDialog extends Dialog {
          }
       };
       methodRow.add(this.methodCombo, 100);
-      main.add(methodRow);
+      mix.add(methodRow);
 
       var refRow = new HorizontalSizer;
       refRow.spacing = 6;
       var refLabel = new Label(this);
       refLabel.text = "LinearFit-Referenz";
+      refLabel.minWidth = this.labelWidth;
       refRow.add(refLabel);
       this.referenceCombo = new ComboBox(this);
       this.referenceCombo.addItem("Automatisch");
@@ -130,10 +137,11 @@ class SlumDialog extends Dialog {
          }
       };
       refRow.add(this.referenceCombo, 100);
-      main.add(refRow);
+      mix.add(refRow);
 
       this.lShare = new NumericControl(this);
       this.lShare.label.text = "L-Anteil an SLUM (%)";
+      this.lShare.label.minWidth = this.labelWidth;
       this.lShare.setRange(50, 80);
       this.lShare.setPrecision(0);
       this.lShare.slider.setRange(50, 80);
@@ -146,11 +154,12 @@ class SlumDialog extends Dialog {
             this.refreshSummary();
          }
       };
-      main.add(this.lShare);
+      mix.add(this.lShare);
       var weightModeRow = new HorizontalSizer;
       weightModeRow.spacing = 6;
       this.rgbWeightLabel = new Label(this);
       this.rgbWeightLabel.text = "RGB-Sampling-Gewichtung";
+      this.rgbWeightLabel.minWidth = this.labelWidth;
       this.rgbWeightLabel.visible = false;
       weightModeRow.add(this.rgbWeightLabel);
       this.rgbMode = new ComboBox(this);
@@ -165,10 +174,10 @@ class SlumDialog extends Dialog {
          }
       };
       weightModeRow.add(this.rgbMode, 100);
-      main.add(weightModeRow);
+      mix.add(weightModeRow);
       this.rgbHint = new Label(this);
       this.rgbHint.visible = false;
-      main.add(this.rgbHint);
+      mix.add(this.rgbHint);
       var manualRow = new HorizontalSizer;
       manualRow.spacing = 10;
       for (var c of ["R", "G", "B"]) {
@@ -193,12 +202,12 @@ class SlumDialog extends Dialog {
             computed: computed, percent: percent };
       }
       manualRow.addStretch();
-      main.add(manualRow);
-      main.add(outRow);
-      main.add(fileRow);
+      mix.add(manualRow);
+      output.add(outRow);
+      output.add(fileRow);
       this.resultSummary = new Label(this);
       this.resultSummary.visible = false;
-      main.add(this.resultSummary);
+      output.add(this.resultSummary);
 
       this.report = new TextBox(this);
       this.report.readOnly = true;
@@ -236,6 +245,16 @@ class SlumDialog extends Dialog {
       main.add(buttons);
       this.sizer = main;
       this.adjustToContents();
+   }
+
+   addGroup(main, title) {
+      var box = new GroupBox(this);
+      box.title = title;
+      box.sizer = new VerticalSizer;
+      box.sizer.margin = 8;
+      box.sizer.spacing = 6;
+      main.add(box);
+      return box.sizer;
    }
 
    addChannel(main, id) {
