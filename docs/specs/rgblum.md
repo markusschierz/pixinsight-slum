@@ -1,6 +1,6 @@
 # Spezifikation: Zweistufige SLUM aus L und RGBLUM
 
-**Status:** Durch den ausdrücklichen Umsetzungsauftrag vom 6. November 2026 fachlich freigegeben. Führendes [Feature-Issue #13](https://github.com/markusschierz/pixinsight-slum/issues/13). Ergänzt [SPEC.md](SPEC.md) und [SPEC-SPFC.md](SPEC-SPFC.md). Die bisherige Gewichtsregel für LRGB wird nur an der hier beschriebenen Stelle ersetzt.
+**Status:** Durch den ausdrücklichen Umsetzungsauftrag vom 6. November 2026 fachlich freigegeben. Führendes [Feature-Issue #13](https://github.com/markusschierz/pixinsight-slum/issues/13). Ergänzt [SLUM-Spec](slum.md) und [SPFC-Spec](spfc.md). Die bisherige Gewichtsregel für LRGB wird nur an der hier beschriebenen Stelle ersetzt.
 
 **Aktuelle Erweiterung:** Die freigegebene automatische RGB-Gewichtung und die vollständige UI-Nachschärfung werden im führenden Issue #13 geführt. Die frühere Gruppen-Slider-Variante aus [Issue #15](https://github.com/markusschierz/pixinsight-slum/issues/15) wird dadurch ersetzt.
 

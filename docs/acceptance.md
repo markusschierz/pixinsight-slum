@@ -2,7 +2,7 @@
 
 **Stand:** 7. November 2026 · PixInsight Core 1.9.6 Lockhart, PJSR V8 · ursprüngliches Issue [#1](https://github.com/markusschierz/pixinsight-slum/issues/1), aktuelles Gewichtungs-Issue [#13](https://github.com/markusschierz/pixinsight-slum/issues/13)
 
-Die bisherigen Abschnitte dokumentieren die jeweilige frühere Version einschließlich der später abgelösten Gruppen-Slider. Die aktuelle Auto-/Manuell-Regel folgt der [RGBLUM-Erweiterung](../SPEC-RGBLUM.md) und ist im letzten Abschnitt geprüft.
+Die bisherigen Abschnitte dokumentieren die jeweilige frühere Version einschließlich der später abgelösten Gruppen-Slider. Die aktuelle Auto-/Manuell-Regel folgt der [RGBLUM-Erweiterung](specs/rgblum.md) und ist im letzten Abschnitt geprüft.
 
 ## Verifizierte Fälle
 
@@ -29,7 +29,7 @@ Die vier realen FITS-Header enthalten keine WCS-Lösung und laut Header jeweils 
 
 ## SPFC-Ergänzung (Issue #11)
 
-Die [technische Evidenz](spfc-evidence.md) dokumentiert PixInsights Metadaten und die bitgleichen Pixelpaare aus den vier realen SPFC-Dateien. Der SPFC-Weg skaliert temporäre Kopien einmalig mit dem kanalbezogenen `ScaleFactors[0]`; die gemeinsame `NormalizationFactor`-Normierung ist für alle Eingaben gleich.
+Die [technische Evidenz](technik.md#spfc-nachweis) dokumentiert PixInsights Metadaten und die bitgleichen Pixelpaare aus den vier realen SPFC-Dateien. Der SPFC-Weg skaliert temporäre Kopien einmalig mit dem kanalbezogenen `ScaleFactors[0]`; die gemeinsame `NormalizationFactor`-Normierung ist für alle Eingaben gleich.
 
 | Fall | Ergebnis |
 | --- | --- |

@@ -1,6 +1,6 @@
 # Spec: SLUM für Siril
 
-**Status:** Entwurf, wartet auf Freigabe.
+**Status:** UMGESETZT seit v1.1.0 (Siril 1.4 oder neuer). Die offenen Fragen unten sind entschieden; siehe „Umsetzungsstand“.
 
 ## Objective
 
@@ -49,7 +49,7 @@ Python 3, PEP 8, reine Funktionen im Kern, Fehler als `ValueError` mit deutschen
 
 ## Boundaries
 
-- Always: Kernlogik mit Tests absichern, Originalbilder nie verändern, Noise-Gewichte wie in SPEC-RGBLUM.md.
+- Always: Kernlogik mit Tests absichern, Originalbilder nie verändern, Noise-Gewichte wie in rgblum.md.
 - Ask first: neue Abhängigkeiten (astropy, scipy), Änderungen an `.github/workflows`, Änderungen an der PixInsight-Version.
 - Never: PixInsight-Verhalten ändern, Sample-Daten committen.
 

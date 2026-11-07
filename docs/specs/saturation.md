@@ -1,6 +1,6 @@
 # Spezifikation: Behandlung gesättigter Sternränder (abschaltbar)
 
-**Status:** UMGESETZT (Verfahren A, Zonengewichtung über geglättete Sättigungsmaske). Siehe Abschnitt 8. Führendes [Issue #26](https://github.com/markusschierz/pixinsight-slum/issues/26). Ergänzt [SPEC-SPFC.md](SPEC-SPFC.md) und [SPEC-RGBLUM.md](SPEC-RGBLUM.md); alle dortigen Regeln gelten weiter.
+**Status:** UMGESETZT (Verfahren A, Zonengewichtung über geglättete Sättigungsmaske). Siehe Abschnitt 8. Führendes [Issue #26](https://github.com/markusschierz/pixinsight-slum/issues/26). Ergänzt [SPFC-Spec](spfc.md) und [rgblum.md](rgblum.md); alle dortigen Regeln gelten weiter.
 
 ## 1. Ausgangslage (gemessen, nicht vermutet)
 
