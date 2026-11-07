@@ -9,11 +9,7 @@ class SlumDialog extends Dialog {
       this.analyzed = false;
       this.suppress = false;
       this.channels = {};
-      this.groupSliders = [];
-      this.groupNames = [];
-      this.groupMembers = {};
-      this.groupPercents = [];
-      this.groupSharesChosen = false;
+      this.manualFields = {};
       this.busy = false;
       this.cancelRequested = false;
       this.closeAfterCancel = false;
@@ -32,6 +28,14 @@ class SlumDialog extends Dialog {
       var ids = ["L", "R", "G", "B"];
       for (var i = 0; i < ids.length; ++i) this.addChannel(main, ids[i]);
 
+      var analysisRow = new HorizontalSizer;
+      analysisRow.addStretch();
+      this.analyzeButton = new PushButton(this);
+      this.analyzeButton.text = "Analysieren";
+      this.analyzeButton.onClick = () => this.analyze("");
+      analysisRow.add(this.analyzeButton);
+      main.add(analysisRow);
+
       var outRow = new HorizontalSizer;
       outRow.spacing = 6;
       var outLabel = new Label(this);
@@ -44,7 +48,6 @@ class SlumDialog extends Dialog {
       this.outputMode.currentItem = 0;
       this.outputMode.onItemSelected = () => this.outputModeChanged();
       outRow.add(this.outputMode, 100);
-      main.add(outRow);
 
       var fileRow = new HorizontalSizer;
       fileRow.spacing = 6;
@@ -55,7 +58,11 @@ class SlumDialog extends Dialog {
       this.outputFileLabel = fileLabel;
       this.outputEdit = new Edit(this);
       this.outputEdit.toolTip = "Neue .xisf-Datei; vorhandene Dateien werden nicht überschrieben.";
-      this.outputEdit.onTextUpdated = () => this.refreshSummary();
+      this.outputEdit.onTextUpdated = () => {
+         this.outputEdit.toolTip = this.outputEdit.text ||
+            "Neue .xisf-Datei; vorhandene Dateien werden nicht überschrieben.";
+         this.refreshSummary();
+      };
       fileRow.add(this.outputEdit, 100);
       var outBrowse = new PushButton(this);
       outBrowse.text = "Wählen…";
@@ -64,12 +71,14 @@ class SlumDialog extends Dialog {
          dialog.caption = "SLUM-XISF speichern";
          dialog.filters = [["PixInsight XISF", "*.xisf"]];
          dialog.overwritePrompt = true;
-         if (dialog.execute()) this.outputEdit.text = dialog.filePath;
+         if (dialog.execute()) {
+            this.outputEdit.text = dialog.filePath;
+            this.outputEdit.toolTip = dialog.filePath;
+         }
          this.refreshSummary();
       };
       fileRow.add(outBrowse);
       this.outputBrowse = outBrowse;
-      main.add(fileRow);
 
       var methodRow = new HorizontalSizer;
       methodRow.spacing = 6;
@@ -121,10 +130,6 @@ class SlumDialog extends Dialog {
          }
       };
       refRow.add(this.referenceCombo, 100);
-      this.analyzeButton = new PushButton(this);
-      this.analyzeButton.text = "Analysieren";
-      this.analyzeButton.onClick = () => this.analyze("");
-      refRow.add(this.analyzeButton);
       main.add(refRow);
 
       this.lShare = new NumericControl(this);
@@ -147,29 +152,55 @@ class SlumDialog extends Dialog {
       this.lShareHint.visible = false;
       main.add(this.lShareHint);
 
-      this.shareLabel = new Label(this);
-      this.shareLabel.text = "Farbgruppen innerhalb RGBLUM verteilen";
-      this.shareLabel.visible = false;
-      main.add(this.shareLabel);
-      this.shareHint = new Label(this);
-      this.shareHint.visible = false;
-      main.add(this.shareHint);
-      for (var s = 0; s < 2; ++s) {
-         let index = s;
-         var slider = new NumericControl(this);
-         slider.setRange(0, 100);
-         slider.setPrecision(0);
-         slider.slider.setRange(0, 100);
-         slider.setValue(s === 0 ? 50 : 33);
-         slider.toolTip = "Anteil dieser Sampling-Gruppe; die letzte Gruppe erhält automatisch den Rest.";
-         slider.visible = false;
-         slider.onValueUpdated = value => this.updateGroupSlider(index, value);
-         main.add(slider);
-         this.groupSliders.push(slider);
+      var weightModeRow = new HorizontalSizer;
+      weightModeRow.spacing = 6;
+      this.rgbWeightLabel = new Label(this);
+      this.rgbWeightLabel.text = "RGB-Sampling-Gewichtung";
+      this.rgbWeightLabel.visible = false;
+      weightModeRow.add(this.rgbWeightLabel);
+      this.rgbMode = new ComboBox(this);
+      this.rgbMode.addItem("Automatisch (Noise bei Ausgabe)");
+      this.rgbMode.addItem("Manuell");
+      this.rgbMode.currentItem = 0;
+      this.rgbMode.visible = false;
+      this.rgbMode.onItemSelected = index => {
+         if (!this.suppress && this.analyzed && !this.busy) {
+            this.rgbMode.currentItem = index;
+            this.refreshWeightControls();
+         }
+      };
+      weightModeRow.add(this.rgbMode, 100);
+      main.add(weightModeRow);
+      this.rgbHint = new Label(this);
+      this.rgbHint.visible = false;
+      main.add(this.rgbHint);
+      var manualRow = new HorizontalSizer;
+      manualRow.spacing = 10;
+      for (var c of ["R", "G", "B"]) {
+         var fieldLabel = new Label(this);
+         fieldLabel.text = c + ":";
+         fieldLabel.visible = false;
+         manualRow.add(fieldLabel);
+         var fieldEdit = new Edit(this);
+         fieldEdit.setFixedWidth(56);
+         fieldEdit.toolTip = "Gewicht innerhalb RGBLUM in Prozent (0 bis 100).";
+         fieldEdit.visible = false;
+         fieldEdit.onTextUpdated = () => this.refreshSummary();
+         manualRow.add(fieldEdit);
+         var computed = new Label(this);
+         computed.visible = false;
+         manualRow.add(computed);
+         var percent = new Label(this);
+         percent.text = "%";
+         percent.visible = false;
+         manualRow.add(percent);
+         this.manualFields[c] = { label: fieldLabel, edit: fieldEdit,
+            computed: computed, percent: percent };
       }
-      this.groupRemainder = new Label(this);
-      this.groupRemainder.visible = false;
-      main.add(this.groupRemainder);
+      manualRow.addStretch();
+      main.add(manualRow);
+      main.add(outRow);
+      main.add(fileRow);
       this.prerequisite = new CheckBox(this);
       this.prerequisite.text = "Linearität, Registrierung, gleichen Ausschnitt und Gradientenkorrektur bestätigt";
       this.prerequisite.onCheck = () => this.refreshSummary();
@@ -180,6 +211,10 @@ class SlumDialog extends Dialog {
       this.registration.onCheck = () => this.refreshSummary();
       main.add(this.registration);
 
+      this.resultSummary = new Label(this);
+      this.resultSummary.visible = false;
+      main.add(this.resultSummary);
+
       this.report = new TextBox(this);
       this.report.readOnly = true;
       this.report.minHeight = 200;
@@ -188,6 +223,9 @@ class SlumDialog extends Dialog {
       this.status = new Label(this);
       this.status.text = "Bereit";
       main.add(this.status);
+      this.validation = new Label(this);
+      this.validation.text = "Bilder wählen und analysieren.";
+      main.add(this.validation);
 
       var buttons = new HorizontalSizer;
       buttons.spacing = 8;
@@ -197,9 +235,9 @@ class SlumDialog extends Dialog {
       this.saveButton.enabled = false;
       this.saveButton.onClick = () => this.create();
       buttons.add(this.saveButton);
-      var cancelButton = new PushButton(this);
-      cancelButton.text = "Schließen";
-      cancelButton.onClick = () => {
+      this.cancelButton = new PushButton(this);
+      this.cancelButton.text = "Schließen";
+      this.cancelButton.onClick = () => {
          if (this.busy) {
             this.cancelRequested = true;
             this.closeAfterCancel = true;
@@ -209,7 +247,7 @@ class SlumDialog extends Dialog {
             this.cancel();
          }
       };
-      buttons.add(cancelButton);
+      buttons.add(this.cancelButton);
       main.add(buttons);
       this.sizer = main;
       this.adjustToContents();
@@ -231,6 +269,7 @@ class SlumDialog extends Dialog {
       var path = new Edit(this);
       path.toolTip = id + "-Master (FITS oder XISF)";
       path.onTextUpdated = () => {
+         path.toolTip = path.text || id + "-Master (FITS oder XISF)";
          if (source.currentItem === 0 && !this.suppress) {
             this.invalidate();
             sampling.text = "";
@@ -243,7 +282,10 @@ class SlumDialog extends Dialog {
          var dialog = new OpenFileDialog;
          dialog.caption = id + "-Master wählen";
          dialog.filters = [["Astrobilder", "*.fit *.fits *.xisf"], ["Alle Dateien", "*"]];
-         if (dialog.execute()) path.text = dialog.filePath;
+         if (dialog.execute()) {
+            path.text = dialog.filePath;
+            path.toolTip = dialog.filePath;
+         }
       };
       row.add(browse);
       var viewList = new ViewList(this);
@@ -258,7 +300,7 @@ class SlumDialog extends Dialog {
       };
       row.add(viewList, 100);
       var refresh = new PushButton(this);
-      refresh.text = "↻";
+      refresh.text = "Aktualisieren";
       refresh.toolTip = "Liste nach neu geöffneten Ansichten aktualisieren.";
       refresh.visible = false;
       refresh.onClick = () => {
@@ -285,7 +327,7 @@ class SlumDialog extends Dialog {
       var sampling = new Edit(this);
       sampling.minWidth = 70;
       sampling.toolTip = "Natives Sampling/Binning, z. B. 1x1, 2x2 oder 3x3. Bei Resampling korrigieren.";
-      sampling.onTextUpdated = () => this.refreshGroups();
+      sampling.onTextUpdated = () => this.refreshWeightControls();
       row.add(sampling);
       main.add(row);
       source.onItemSelected = index => {
@@ -322,8 +364,9 @@ class SlumDialog extends Dialog {
       this.outputMode.enabled = enabled;
       this.prerequisite.enabled = enabled;
       this.registration.enabled = enabled;
-      for (var i = 0; i < this.groupSliders.length; ++i)
-         this.groupSliders[i].enabled = enabled && this.analyzed;
+      this.rgbMode.enabled = enabled && this.analyzed;
+      for (var id of ["R", "G", "B"])
+         this.manualFields[id].edit.enabled = enabled && this.analyzed;
       this.lShare.enabled = enabled && this.analyzed;
    }
 
@@ -357,12 +400,14 @@ class SlumDialog extends Dialog {
       this.analyzed = false;
       this.lShare.visible = false;
       this.lShareHint.visible = false;
-      this.hideGroupControls();
+      this.hideWeightControls();
       this.methodCombo.enabled = false;
       this.referenceCombo.enabled = false;
       this.saveButton.enabled = false;
       this.report.text = "Dateiauswahl geändert. Bitte erneut analysieren.";
       this.status.text = "Analyse erforderlich";
+      this.validation.text = "Bilder erneut analysieren.";
+      this.resultSummary.visible = false;
    }
 
    analyze(override) {
@@ -370,9 +415,14 @@ class SlumDialog extends Dialog {
       this.cancelRequested = false;
       this.closeAfterCancel = false;
       this.analyzed = false;
-      this.groupNames = [];
-      this.groupSharesChosen = false;
+      this.suppress = true;
+      this.rgbMode.currentItem = 0;
+      for (var color of ["R", "G", "B"])
+         this.manualFields[color].edit.text = "";
+      this.suppress = false;
       this.saveButton.enabled = false;
+      this.resultSummary.visible = false;
+      this.validation.text = "Analyse läuft…";
       this.analyzeButton.enabled = false;
       this.methodCombo.enabled = false;
       this.referenceCombo.enabled = false;
@@ -396,7 +446,7 @@ class SlumDialog extends Dialog {
          this.referenceCombo.enabled = false;
          this.suppress = false;
          this.registration.visible = !this.session.registrationCertain;
-         this.refreshGroups();
+         this.refreshWeightControls();
          this.adjustToContents();
          this.status.text = this.session.spfcAvailable ?
             "SPFC verfügbar. Sampling prüfen." :
@@ -407,13 +457,14 @@ class SlumDialog extends Dialog {
          this.analyzed = false;
          this.lShare.visible = false;
          this.lShareHint.visible = false;
-         this.hideGroupControls();
+         this.hideWeightControls();
          this.methodCombo.enabled = false;
          this.referenceCombo.enabled = false;
          var cancelled = error.message === "Vom Nutzer abgebrochen.";
          this.report.text = (cancelled ? "Analyse abgebrochen." :
             "Analyse fehlgeschlagen: " + error.message);
          this.status.text = cancelled ? "Abgebrochen" : "Fehler: " + error.message;
+         this.validation.text = cancelled ? "Analyse abgebrochen." : "Analyse fehlgeschlagen: " + error.message;
       } finally {
          this.busy = false;
          this.analyzeButton.enabled = true;
@@ -429,134 +480,95 @@ class SlumDialog extends Dialog {
       if (this.cancelRequested) throw new Error("Vom Nutzer abgebrochen.");
    }
 
-   hideGroupControls() {
-      this.shareLabel.visible = false;
-      this.shareHint.visible = false;
-      this.groupRemainder.visible = false;
-      for (var i = 0; i < this.groupSliders.length; ++i)
-         this.groupSliders[i].visible = false;
+   hideWeightControls() {
+      this.rgbWeightLabel.visible = false;
+      this.rgbMode.visible = false;
+      this.rgbHint.visible = false;
+      for (var id of ["R", "G", "B"]) {
+         var field = this.manualFields[id];
+         field.label.visible = false;
+         field.edit.visible = false;
+         field.computed.visible = false;
+         field.percent.visible = false;
+      }
    }
 
-   refreshGroups() {
+   colorIds() {
+      return this.session.rows.filter(function (row) { return row.id !== "L"; })
+         .map(function (row) { return row.id; });
+   }
+
+   refreshWeightControls() {
       if (this.suppress || !this.analyzed) return;
+      var colors = this.colorIds();
       var hasL = this.session.rows.some(function (row) { return row.id === "L"; });
+      var manual = this.rgbMode.currentItem === 1 && colors.length > 1;
       this.lShare.visible = hasL;
       this.lShareHint.visible = hasL;
+      this.lShareHint.text = manual ?
+         "RGBLUM erhält den Rest; R/G/B werden darin manuell gewichtet." :
+         "RGBLUM erhält den Rest; R/G/B werden darin nach Noise gewichtet.";
+      this.rgbWeightLabel.visible = colors.length > 0;
+      this.rgbMode.visible = colors.length > 1;
+      this.rgbHint.visible = colors.length > 0;
       var groups = [];
-      var members = {};
-      for (var i = 0; i < this.session.rows.length; ++i) {
-         var row = this.session.rows[i];
-         if (hasL && row.id === "L") continue;
-         var value = this.channels[row.id].sampling.text;
+      for (var i = 0; i < colors.length; ++i) {
          try {
-            var key = samplingKey(value);
-            if (groups.indexOf(key) < 0) {
-               groups.push(key);
-               members[key] = [];
-            }
-            members[key].push(row.id);
-         } catch (_) { /* Error is shown in summary. */ }
+            var group = samplingKey(this.channels[colors[i]].sampling.text);
+            if (groups.indexOf(group) < 0) groups.push(group);
+         } catch (_) { /* Summary shows missing or invalid sampling. */ }
       }
-      var unchanged = groups.length === this.groupNames.length &&
-         groups.every(function (key, index) { return key === this.groupNames[index]; }, this);
-      this.groupNames = groups;
-      this.groupMembers = members;
-      if (!unchanged) {
-         this.groupPercents = groups.length === 3 ? [33, 33] : [50];
-         this.groupSharesChosen = false;
-      }
-      this.shareLabel.text = hasL ? "Farbgruppen innerhalb RGBLUM verteilen" :
-         "Sampling-Gruppen innerhalb SLUM verteilen";
-      this.shareLabel.visible = groups.length > 1;
-      this.shareHint.visible = groups.length > 1;
-      this.groupRemainder.visible = groups.length > 1;
-      for (var j = 0; j < this.groupSliders.length; ++j) {
-         var visible = groups.length > 1 && j < groups.length - 1;
-         this.groupSliders[j].visible = visible;
-         if (!visible) continue;
-         this.groupSliders[j].label.text = this.groupTitle(groups[j]) +
-            (hasL ? " – Anteil an RGBLUM (%)" : " – Anteil an SLUM (%)");
-         this.suppress = true;
-         this.groupSliders[j].setValue(this.groupPercents[j]);
-         this.suppress = false;
-      }
-      if (hasL && groups.length === 1) {
-         var lSampling = this.channels.L.sampling.text;
-         this.lShareHint.text = this.groupTitle(groups[0]) + ": RGBLUM nach Noise. " +
-            "L (" + lSampling.replace("x", "×") + ") wird über den L-Anteil oben gemischt.";
+      if (colors.length === 1) {
+         this.rgbHint.text = colors[0] + " erhält " +
+            (hasL ? "100 % von RGBLUM." : "100 % der SLUM.");
+      } else if (manual) {
+         this.rgbHint.text = "RGB-Gewichte: erste Werte eingeben, letzter Kanal = Rest zu 100 %.";
       } else {
-         this.lShareHint.text = "RGBLUM erhält den Rest; R/G/B werden darin nach Noise gewichtet.";
+         this.rgbHint.text = "Automatisch nach Noise bei der Ausgabe" +
+            (groups.length > 1 ? "; bei gemischtem Sampling eine Heuristik." : ".");
       }
-      this.refreshGroupRemainder();
+      for (var id of ["R", "G", "B"]) {
+         var field = this.manualFields[id];
+         var selected = manual && colors.indexOf(id) >= 0;
+         var last = selected && id === colors[colors.length - 1];
+         field.label.visible = selected;
+         field.edit.visible = selected && !last;
+         field.computed.visible = last;
+         field.percent.visible = selected && !last;
+      }
       this.refreshSummary();
       this.adjustToContents();
    }
 
-   groupTitle(key) {
-      return (this.groupMembers[key] || []).join("/") +
-         " (Sampling " + key.replace("x", "×") + ")";
+   manualWeights() {
+      var colors = this.colorIds();
+      if (this.rgbMode.currentItem !== 1 || colors.length < 2) return null;
+      var weights = {};
+      var used = 0;
+      for (var i = 0; i < colors.length - 1; ++i) {
+         var input = this.manualFields[colors[i]].edit.text.trim();
+         if (!/^\d{1,3}$/.test(input))
+            throw new Error("Gewicht für " + colors[i] + " als ganze Prozentzahl von 0 bis 100 eingeben.");
+         var percent = Number(input);
+         if (percent > 100)
+            throw new Error("Gewicht für " + colors[i] + " muss zwischen 0 und 100 % liegen.");
+         used += percent;
+         weights[colors[i]] = percent / 100;
+      }
+      if (used > 100)
+         throw new Error("RGB-Gewichte überschreiten zusammen 100 %.");
+      weights[colors[colors.length - 1]] = (100 - used) / 100;
+      return weights;
    }
 
    percentText(value) {
       return value.toFixed(2).replace(/\.00$/, "");
    }
 
-   refreshGroupRemainder() {
-      if (this.groupNames.length < 2) return;
-      var used = this.groupPercents.reduce(function (sum, value) { return sum + value; }, 0);
-      this.groupRemainder.text = this.groupTitle(this.groupNames[this.groupNames.length - 1]) +
-         " erhält automatisch " + (100 - used) + " %.";
-   }
-
-   updateGroupSlider(index, value) {
-      if (this.suppress || this.busy || !this.analyzed ||
-          index >= this.groupNames.length - 1) return;
-      this.groupPercents[index] = Math.max(0, Math.min(100, Math.round(value)));
-      var excess = this.groupPercents.reduce(function (sum, part) { return sum + part; }, 0) - 100;
-      if (excess > 0) {
-         this.suppress = true;
-         for (var i = this.groupPercents.length - 1; i >= 0 && excess > 0; --i) {
-            if (i === index) continue;
-            var reduction = Math.min(excess, this.groupPercents[i]);
-            this.groupPercents[i] -= reduction;
-            this.groupSliders[i].setValue(this.groupPercents[i]);
-            excess -= reduction;
-         }
-         this.suppress = false;
-      }
-      this.groupSharesChosen = true;
-      this.refreshGroupRemainder();
-      this.refreshSummary();
-   }
-
-   shares() {
-      if (this.groupNames.length <= 1) return null;
-      if (!this.groupSharesChosen)
-         throw new Error("Bitte die Aufteilung mit dem Gruppenregler festlegen.");
-      var shares = {};
-      var used = 0;
-      for (var i = 0; i < this.groupNames.length - 1; ++i) {
-         used += this.groupPercents[i];
-         shares[this.groupNames[i]] = this.groupPercents[i] / 100;
-      }
-      shares[this.groupNames[this.groupNames.length - 1]] = (100 - used) / 100;
-      return shares;
-   }
-
    refreshSummary() {
       if (this.suppress || !this.analyzed) return;
       if (this.busy) { this.saveButton.enabled = false; return; }
       var hasL = this.session.rows.some(function (row) { return row.id === "L"; });
-      if (this.groupNames.length > 1)
-         this.shareHint.text = hasL ?
-            "Nur den RGBLUM-Rest aufteilen: hier " +
-               (100 * (1 - this.session.lFraction)).toFixed(0) +
-               "% der fertigen SLUM. " +
-               (this.groupSharesChosen ? "Letzte Gruppe = Rest." :
-                  "Regler bewegen; letzte Gruppe = Rest.") :
-            "SLUM zwischen Sampling-Gruppen aufteilen. " +
-               (this.groupSharesChosen ? "Letzte Gruppe = Rest." :
-                  "Regler bewegen; letzte Gruppe = Rest.");
       var lines = ["Eingaben / Normalisierung / Ausgabe", ""];
       var sampling = {};
       for (var i = 0; i < this.session.rows.length; ++i) {
@@ -576,49 +588,75 @@ class SlumDialog extends Dialog {
       lines.push("Verfahren: " + (this.session.method === "spfc" ? "SPFC-Flux" :
          this.session.method === "linearFit" ? "LinearFit (Fallback)" : "noch nicht gewählt"));
       if (hasL)
-         lines.push("Zwei Stufen: RGBLUM aus R/G/B nach Noise; SLUM = " +
+         lines.push("Zwei Stufen: SLUM = " +
             (100 * this.session.lFraction).toFixed(0) + "% L + " +
             (100 * (1 - this.session.lFraction)).toFixed(0) + "% RGBLUM");
+      lines.push("RGB-Sampling-Gewichtung: " +
+         (this.rgbMode.currentItem === 1 && this.colorIds().length > 1 ?
+            "manuell" : "automatisch nach Noise bei Ausgabe"));
       if (this.session.method === "linearFit")
          lines.push("Referenzempfehlung: " + this.session.recommended +
             "   Gewählte Referenz: " + this.session.reference);
       if (!this.session.registrationCertain)
          lines.push("Registriertes Ausgaberaster anhand der WCS nicht sicher: Bestätigung erforderlich.");
       var valid = true;
+      var reason = "";
+      var selectedColors = this.colorIds();
+      if (this.rgbMode.currentItem === 1 && selectedColors.length > 1)
+         this.manualFields[selectedColors[selectedColors.length - 1]].computed.text = "—";
       try {
-         var shares = this.shares();
-         this.session.validateMix(sampling, shares);
-         if (this.groupNames.length > 1)
-            for (var g = 0; g < this.groupNames.length; ++g)
-               lines.push((hasL ? "RGBLUM-Gruppe " : "Gruppe ") +
-                  this.groupTitle(this.groupNames[g]) + ": " +
-                  (shares[this.groupNames[g]] * 100).toFixed(0) + "%" +
-                  (hasL ? " von RGBLUM = " +
-                     this.percentText(shares[this.groupNames[g]] *
-                        (1 - this.session.lFraction) * 100) +
-                     "% der fertigen SLUM" : ""));
-      } catch (error) { valid = false; lines.push("Noch erforderlich: " + error.message); }
+         var manual = this.manualWeights();
+         this.session.validateMix(sampling, manual);
+         if (manual) {
+            var ids = this.colorIds();
+            this.manualFields[ids[ids.length - 1]].computed.text =
+               (100 * manual[ids[ids.length - 1]]).toFixed(0) + " % (berechnet)";
+            lines.push("Manuelle RGB-Anteile: " + ids.map(function (id) {
+               return id + " " + (100 * manual[id]).toFixed(0) + "%";
+            }).join("   "));
+         }
+      } catch (error) {
+         valid = false;
+         reason = error.message;
+         lines.push("Noch erforderlich: " + error.message);
+      }
       lines.push("Normalisierung, Noise, count und Endgewichte: werden bei der Ausgabe berechnet.");
       if (this.outputMode.currentItem === 0) {
          lines.push("Ausgabe: Datei " + this.outputEdit.text);
-         if (!/\.xisf$/i.test(this.outputEdit.text.trim())) valid = false;
+         if (!/\.xisf$/i.test(this.outputEdit.text.trim())) {
+            valid = false;
+            if (!reason) reason = "XISF-Ziel mit Endung .xisf wählen.";
+         }
          if (this.outputEdit.text && File.exists(this.outputEdit.text.trim())) {
             valid = false;
+            if (!reason) reason = "Ausgabedatei existiert bereits.";
             lines.push("Ausgabedatei existiert bereits.");
          }
       } else {
          lines.push("Ausgabe: neue SLUM-Ansicht in PixInsight (keine Datei)");
       }
-      if (!this.prerequisite.checked) valid = false;
-      if (!this.session.method) valid = false;
-      if (!this.session.registrationCertain && !this.registration.checked) valid = false;
+      if (!this.prerequisite.checked) {
+         valid = false;
+         if (!reason) reason = "Bildvorbedingungen bestätigen.";
+      }
+      if (!this.session.method) {
+         valid = false;
+         reason = "SPFC vervollständigen oder LinearFit ausdrücklich wählen.";
+      }
+      if (!this.session.registrationCertain && !this.registration.checked) {
+         valid = false;
+         if (!reason) reason = "Gemeinsames registriertes Raster bestätigen.";
+      }
       this.report.text = lines.join("\n");
       this.saveButton.enabled = valid;
+      this.validation.text = valid ? "Bereit zum Erstellen." : "Noch nötig: " + reason;
    }
 
    appendRunDetails() {
       var run = this.session.lastRun;
       var lines = ["", "Verfahren: " + (run.method === "spfc" ? "SPFC-Flux" : "LinearFit")];
+      lines.push("RGB-Sampling-Gewichtung: " +
+         (run.weightMode === "manual" ? "manuell" : "automatisch nach Noise"));
       if (run.method === "linearFit") lines.push("LinearFit-Referenz: " + run.reference);
       else lines.push("SPFC-Flux-Faktoren: " + run.rows.map(function (r) {
          return r.id + " " + r.spfc.scale.toPrecision(7);
@@ -652,8 +690,10 @@ class SlumDialog extends Dialog {
       this.saveButton.enabled = false;
       this.analyzeButton.enabled = false;
       this.methodCombo.enabled = false;
+      this.cancelButton.text = "Abbrechen";
       this.setInputsEnabled(false);
       this.status.text = "Erzeuge SLUM…";
+      this.validation.text = "SLUM wird berechnet…";
       processEvents();
       try {
          var sampling = {};
@@ -662,13 +702,13 @@ class SlumDialog extends Dialog {
             sampling[id] = this.channels[id].sampling.text;
          }
          if (this.outputMode.currentItem === 0) {
-            this.session.create(this.outputEdit.text.trim(), sampling, this.shares(),
+            this.session.create(this.outputEdit.text.trim(), sampling, this.manualWeights(),
                this.session.registrationCertain || this.registration.checked,
                stage => this.progress(stage));
             this.report.text += "\n\nFertig: " + this.outputEdit.text.trim();
             this.status.text = "SLUM-Datei gespeichert.";
          } else {
-            var result = this.session.createView(sampling, this.shares(),
+            var result = this.session.createView(sampling, this.manualWeights(),
                this.session.registrationCertain || this.registration.checked,
                stage => this.progress(stage));
             this.lastOutputViewId = result.viewId;
@@ -676,6 +716,17 @@ class SlumDialog extends Dialog {
             this.status.text = "SLUM-Ansicht ausgegeben: " + result.viewId;
          }
          this.appendRunDetails();
+         var run = this.session.lastRun;
+         this.resultSummary.text = "SLUM erstellt: " + run.weights.map(function (w) {
+            return w.id + " " + (100 * w.weight).toFixed(1) + "%";
+         }).join("   ") + "   ·   " +
+            (this.lastOutputViewId ? "Ansicht " + this.lastOutputViewId :
+               this.outputEdit.text.trim().replace(/^.*[\\/]/, ""));
+         this.resultSummary.toolTip = this.lastOutputViewId ?
+            "Ansicht " + this.lastOutputViewId : this.outputEdit.text.trim();
+         this.resultSummary.visible = true;
+         this.adjustToContents();
+         this.validation.text = "SLUM erfolgreich erstellt.";
          this.analyzed = false;
          this.methodCombo.enabled = false;
          this.referenceCombo.enabled = false;
@@ -687,8 +738,10 @@ class SlumDialog extends Dialog {
          this.report.text += cancelled ? "\n\nErstellung abgebrochen." :
             "\n\nFehler: " + error.message;
          this.status.text = cancelled ? "Abgebrochen" : "Fehler: " + error.message;
+         this.validation.text = cancelled ? "Erstellung abgebrochen." : "Fehler: " + error.message;
       } finally {
          this.busy = false;
+         this.cancelButton.text = "Schließen";
          this.analyzeButton.enabled = true;
          this.setInputsEnabled(true);
          if (this.closeAfterCancel) this.cancel();

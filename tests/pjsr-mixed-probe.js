@@ -59,8 +59,8 @@ try{
    dialog.prerequisite.checked=true;
    dialog.registration.checked=true;
    dialog.refreshSummary();
-   report.outTextLn("bin3Groups="+dialog.groupNames.join(",")+
-      " noGroupShare="+(dialog.shares()===null)+
+   report.outTextLn("bin3Auto="+(dialog.rgbMode.currentItem===0)+
+      " noManualWeight="+(dialog.manualWeights()===null)+
       " hint="+dialog.lShareHint.text+
       " ready="+dialog.saveButton.enabled);
    dialog.render().save("/tmp/pjsr-bin3-ui-probe.png");

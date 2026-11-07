@@ -29,27 +29,53 @@ try {
    session.selectMethod("linearFit");
    session.setLuminanceFraction(0.7);
    let sampling={L:"1x1",R:"1x1",G:"2x2",B:"2x2"};
-   let shares={"1x1":0.4,"2x2":0.6};
-   session.validateMix(sampling,shares);
+   session.validateMix(sampling,null);
    session.prepare();
    let byId={};
    for(let row of session.rows)byId[row.id]=row;
-   let gVariance=1/Math.pow(byId.G.noise,2);
-   let bVariance=1/Math.pow(byId.B.noise,2);
-   let rgbExpected=0.4*byId.R.view.image.sample(40,60)+
-      0.6*(gVariance*byId.G.view.image.sample(40,60)+
-         bVariance*byId.B.view.image.sample(40,60))/(gVariance+bVariance);
+   let inverse={};
+   for(let id of ["R","G","B"])inverse[id]=1/Math.pow(byId[id].noise,2);
+   let total=inverse.R+inverse.G+inverse.B;
+   let rgbExpected=["R","G","B"].reduce(function(sum,id){
+      return sum+inverse[id]/total*byId[id].view.image.sample(40,60);
+   },0);
    let expected=0.7*byId.L.view.image.sample(40,60)+0.3*rgbExpected;
-   let result=session.createView(sampling,shares,true);
+   let result=session.createView(sampling,null,true);
    output=View.viewById(result.viewId).window;
    let w=result.weights;
    let delta=Math.abs(output.mainView.image.sample(40,60)-expected);
    report.outTextLn("L="+w[0].weight+" RGB="+
       w.slice(1).reduce(function(s,x){return s+x.weight},0)+
-      " R="+w[1].weight+" GB="+(w[2].weight+w[3].weight)+
+      " autoRGB="+w.slice(1).map(function(item){return item.id+":"+item.weight}).join(",")+
       " pixelDifference="+delta+
       " originalUnchanged="+(l.mainView.image.sample(40,60)===original)+
-      " method="+session.lastRun.method);
+      " method="+session.lastRun.method+" mode="+session.lastRun.weightMode);
+   let manualSession=new SlumSession;
+   let manualOutput=null;
+   try {
+      manualSession.analyze(config);
+      manualSession.selectMethod("linearFit");
+      manualSession.setLuminanceFraction(0.7);
+      manualSession.prepare();
+      let manualRows={};
+      for(let row of manualSession.rows)manualRows[row.id]=row;
+      let expectedManual=0.7*manualRows.L.view.image.sample(40,60)+
+         0.3*(0.4*manualRows.R.view.image.sample(40,60)+
+         0.35*manualRows.G.view.image.sample(40,60)+
+         0.25*manualRows.B.view.image.sample(40,60));
+      let manualResult=manualSession.createView({L:"1x1",R:"1x1",G:"2x2",B:"3x3"},
+         {R:0.4,G:0.35,B:0.25},true);
+      manualOutput=View.viewById(manualResult.viewId).window;
+      report.outTextLn("manualWeights="+manualResult.weights.map(function(w){
+         return w.id+":"+w.weight;
+      }).join(",")+" pixelDifference="+
+         Math.abs(expectedManual-manualOutput.mainView.image.sample(40,60))+
+         " mode="+manualSession.lastRun.weightMode+
+         " originalUnchanged="+(l.mainView.image.sample(40,60)===original));
+   } finally {
+      manualSession.close();
+      if(manualOutput&&!manualOutput.isNull)manualOutput.forceClose();
+   }
    let dialog=new SlumDialog;
    try {
       for(let w of windows){
@@ -64,38 +90,41 @@ try {
       dialog.methodCombo.currentItem=2;
       dialog.methodCombo.onItemSelected(2);
       let analyzedRows=dialog.session.rows;
-      let unchosen=!dialog.groupSharesChosen;
-      dialog.groupSliders[0].setValue(40);
-      dialog.groupSliders[0].onValueUpdated(40);
       dialog.prerequisite.checked=true;
       dialog.registration.checked=true;
       dialog.refreshSummary();
-      report.outTextLn("groups="+dialog.groupNames.join(",")+
-         " label="+dialog.shareLabel.text+
+      report.outTextLn("autoMode="+(dialog.rgbMode.currentItem===0)+
          " ready="+dialog.saveButton.enabled+
-         " slider40="+(dialog.groupSliders[0].value===40)+
-         " remainder60="+(dialog.groupRemainder.text.indexOf("60 %")>=0)+
-         " explicit="+unchosen+
          " sameAnalysis="+(dialog.session.rows===analyzedRows)+
          " noiseDeferred="+analyzedRows.every(function(row){return row.noise===undefined})+
-         " groupReport="+(dialog.report.text.indexOf("RGBLUM-Gruppe R (Sampling 1×1): 40% von RGBLUM = 12% der fertigen SLUM")>=0)+
          " mixReport="+(dialog.report.text.indexOf("SLUM = 70% L + 30% RGBLUM")>=0));
       dialog.render().save("/tmp/pjsr-rgblum-mixed-probe.png");
       dialog.channels.B.sampling.text="3x3";
-      dialog.refreshGroups();
-      dialog.groupSliders[0].setValue(80);
-      dialog.groupSliders[0].onValueUpdated(80);
-      dialog.groupSliders[1].setValue(40);
-      dialog.groupSliders[1].onValueUpdated(40);
-      let clamped=dialog.groupPercents[0]===60 && dialog.groupPercents[1]===40;
-      dialog.groupSliders[0].setValue(30);
-      dialog.groupSliders[0].onValueUpdated(30);
-      let threeShares=dialog.shares();
-      report.outTextLn("threeGroups="+dialog.groupNames.join(",")+
-         " clamped="+clamped+" shares="+
-         [threeShares["1x1"],threeShares["2x2"],threeShares["3x3"]].join(",")+
-         " ready="+dialog.saveButton.enabled);
+      report.outTextLn("bin3Hint="+(dialog.rgbHint.text.indexOf("Heuristik")>=0)+
+         " autoReady="+dialog.saveButton.enabled+
+         " sameAnalysis="+(dialog.session.rows===analyzedRows));
+      dialog.rgbMode.currentItem=1;
+      dialog.rgbMode.onItemSelected(1);
+      report.outTextLn("missingManualBlocked="+(!dialog.saveButton.enabled)+
+         " reason="+dialog.validation.text);
+      dialog.manualFields.R.edit.text="40";
+      dialog.manualFields.G.edit.text="35";
+      dialog.refreshSummary();
+      let manual=dialog.manualWeights();
+      report.outTextLn("manual="+[manual.R,manual.G,manual.B].join(",")+
+         " ready="+dialog.saveButton.enabled+
+         " computed="+dialog.manualFields.B.computed.text+
+         " hint="+dialog.lShareHint.text);
       dialog.render().save("/tmp/pjsr-rgblum-three-groups.png");
+      dialog.manualFields.R.edit.text="80";
+      dialog.manualFields.G.edit.text="40";
+      dialog.refreshSummary();
+      report.outTextLn("invalidBlocked="+(!dialog.saveButton.enabled)+
+         " reason="+dialog.validation.text);
+      dialog.rgbMode.currentItem=0;
+      dialog.rgbMode.onItemSelected(0);
+      report.outTextLn("restoredAuto="+dialog.saveButton.enabled+
+         " sameAnalysis="+(dialog.session.rows===analyzedRows));
       dialog.session.close();
    } finally {dialog.session.close();}
 } catch(e){report.outTextLn("ERROR="+e+" STACK="+e.stack);}
