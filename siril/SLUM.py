@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: MIT
 # SLUM für Siril: lineare Super-Luminanz aus 2-4 registrierten L-, R-, G-, B-Mastern.
-# Version 1.1.0
+# Version 1.1.1
 #
-# Aufruf in Siril: Scripts > SLUM.py (Ordner mit slum_*.py in die Skriptpfade aufnehmen).
+# Aufruf in Siril: Scripts > SLUM.py (SLUM.py direkt im Skriptpfad, die Module im Unterordner slum_lib).
 # Die Master müssen linear, registriert, gleich beschnitten und gradientenkorrigiert sein.
 
 import os
@@ -10,7 +10,9 @@ import sys
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+_HERE = os.path.dirname(os.path.abspath(__file__))
+for _path in (os.path.join(_HERE, "slum_lib"), _HERE):
+    sys.path.insert(0, _path)
 
 import sirilpy  # noqa: E402
 
@@ -45,47 +47,74 @@ class SlumApp:
         self.build()
 
     def build(self):
-        frame = ttk.Frame(self.root, padding=10)
-        frame.grid(sticky="nsew")
-        ttk.Label(frame, text="Master (2-4 Kanäle)", font=("", 10, "bold")).grid(
-            row=0, column=0, columnspan=5, sticky="w")
+        pad = 8
+        self.root.minsize(640, 0)
+        outer = ttk.Frame(self.root, padding=2 * pad)
+        outer.pack(fill="both", expand=True)
+        outer.columnconfigure(0, weight=1)
+
+        sources = ttk.LabelFrame(outer, text="Master (2-4 Kanäle)", padding=pad)
+        sources.grid(row=0, column=0, sticky="ew")
+        sources.columnconfigure(1, weight=1)
+        for column, title in ((0, "Kanal"), (1, "Quelle"), (4, "Sampling")):
+            ttk.Label(sources, text=title, foreground="gray40").grid(row=0, column=column, sticky="w")
         for row, id in enumerate(CHANNEL_IDS, start=1):
-            ttk.Label(frame, text=id).grid(row=row, column=0)
-            ttk.Entry(frame, textvariable=self.path[id], width=48).grid(row=row, column=1)
-            ttk.Button(frame, text="Datei…", command=lambda i=id: self.pick(i)).grid(row=row, column=2)
-            ttk.Button(frame, text="Aktuelles Bild",
-                       command=lambda i=id: self.use_current(i)).grid(row=row, column=3)
-            ttk.Combobox(frame, textvariable=self.sampling[id], values=SAMPLINGS, width=5,
+            ttk.Label(sources, text=id, font=("", 10, "bold")).grid(row=row, column=0, sticky="w", pady=2)
+            ttk.Entry(sources, textvariable=self.path[id]).grid(row=row, column=1, sticky="ew", padx=pad)
+            ttk.Button(sources, text="Datei…", command=lambda i=id: self.pick(i)).grid(row=row, column=2)
+            ttk.Button(sources, text="Aktuelles Bild",
+                       command=lambda i=id: self.use_current(i)).grid(row=row, column=3, padx=(4, pad))
+            ttk.Combobox(sources, textvariable=self.sampling[id], values=SAMPLINGS, width=5,
                          state="readonly").grid(row=row, column=4)
-        ttk.Label(frame, text="Spalte rechts: natives Sampling/Binning").grid(
-            row=5, column=1, columnspan=4, sticky="w")
-        ttk.Button(frame, text="Analysieren", command=self.analyze).grid(row=6, column=1, sticky="w")
-        self.info = tk.Text(frame, height=6, width=78, state="disabled")
-        self.info.grid(row=7, column=0, columnspan=5, pady=4)
-        ttk.Label(frame, text="LinearFit-Referenz").grid(row=8, column=0, columnspan=2, sticky="w")
-        self.reference_box = ttk.Combobox(frame, textvariable=self.reference, width=5, state="disabled")
-        self.reference_box.grid(row=8, column=1, sticky="e")
-        ttk.Label(frame, text="L-Anteil an SLUM (%)").grid(row=9, column=0, columnspan=2, sticky="w")
-        ttk.Scale(frame, from_=50, to=80, variable=self.l_percent, command=self.update_l_label).grid(
-            row=9, column=1, sticky="ew")
-        self.l_label = ttk.Label(frame, text="70 %")
-        self.l_label.grid(row=9, column=2)
-        ttk.Label(frame, text="RGB-Gewichtung").grid(row=10, column=0, columnspan=2, sticky="w")
-        ttk.Radiobutton(frame, text="Automatisch (1/noise²)", variable=self.weight_mode,
-                        value="auto").grid(row=10, column=1, sticky="w")
-        ttk.Radiobutton(frame, text="Manuell (%)", variable=self.weight_mode,
-                        value="manual").grid(row=11, column=1, sticky="w")
-        manual = ttk.Frame(frame)
-        manual.grid(row=11, column=2, columnspan=3, sticky="w")
+        ttk.Button(sources, text="Analysieren", command=self.analyze).grid(
+            row=5, column=0, columnspan=2, sticky="w", pady=(pad, 0))
+
+        self.info = tk.Text(outer, height=5, wrap="word", state="disabled", relief="flat",
+                            background="gray95", padx=pad, pady=4)
+        self.info.grid(row=1, column=0, sticky="ew", pady=pad)
+
+        options = ttk.LabelFrame(outer, text="Mischung", padding=pad)
+        options.grid(row=2, column=0, sticky="ew")
+        options.columnconfigure(1, weight=1)
+        ttk.Label(options, text="LinearFit-Referenz").grid(row=0, column=0, sticky="w", pady=2)
+        self.reference_box = ttk.Combobox(options, textvariable=self.reference, width=5, state="disabled")
+        self.reference_box.grid(row=0, column=1, sticky="w", padx=pad)
+        ttk.Label(options, text="L-Anteil").grid(row=1, column=0, sticky="w", pady=2)
+        ttk.Scale(options, from_=50, to=80, variable=self.l_percent, command=self.update_l_label).grid(
+            row=1, column=1, sticky="ew", padx=pad)
+        self.l_label = ttk.Label(options, text="70 %", width=6, anchor="e")
+        self.l_label.grid(row=1, column=2)
+        ttk.Label(options, text="RGB-Gewichtung").grid(row=2, column=0, sticky="w", pady=2)
+        modes = ttk.Frame(options)
+        modes.grid(row=2, column=1, columnspan=2, sticky="w", padx=pad)
+        ttk.Radiobutton(modes, text="Automatisch (1/noise²)", variable=self.weight_mode, value="auto",
+                        command=self.toggle_manual).pack(side="left")
+        ttk.Radiobutton(modes, text="Manuell (%)", variable=self.weight_mode, value="manual",
+                        command=self.toggle_manual).pack(side="left", padx=pad)
+        self.manual_frame = ttk.Frame(options)
+        self.manual_frame.grid(row=3, column=1, columnspan=2, sticky="w", padx=pad)
         for id in "RGB":
-            ttk.Label(manual, text=id).pack(side="left")
-            ttk.Entry(manual, textvariable=self.manual[id], width=5).pack(side="left", padx=2)
-        ttk.Label(frame, text="Ausgabe (neue FITS)").grid(row=12, column=0, columnspan=2, sticky="w")
-        ttk.Entry(frame, textvariable=self.output, width=48).grid(row=12, column=1)
-        ttk.Button(frame, text="Ziel…", command=self.pick_output).grid(row=12, column=2)
-        ttk.Checkbutton(frame, text="Ergebnis in Siril öffnen", variable=self.open_result).grid(
-            row=13, column=1, sticky="w")
-        ttk.Button(frame, text="SLUM erstellen", command=self.run).grid(row=14, column=1, sticky="w")
+            ttk.Label(self.manual_frame, text=id).pack(side="left")
+            ttk.Entry(self.manual_frame, textvariable=self.manual[id], width=5).pack(
+                side="left", padx=(4, pad))
+        self.manual_frame.grid_remove()
+
+        output = ttk.LabelFrame(outer, text="Ausgabe", padding=pad)
+        output.grid(row=3, column=0, sticky="ew", pady=pad)
+        output.columnconfigure(0, weight=1)
+        ttk.Entry(output, textvariable=self.output).grid(row=0, column=0, sticky="ew")
+        ttk.Button(output, text="Ziel…", command=self.pick_output).grid(row=0, column=1, padx=(pad, 0))
+        ttk.Checkbutton(output, text="Ergebnis in Siril öffnen", variable=self.open_result).grid(
+            row=1, column=0, sticky="w", pady=(pad, 0))
+
+        ttk.Button(outer, text="SLUM erstellen", command=self.run, default="active").grid(
+            row=4, column=0, sticky="e")
+
+    def toggle_manual(self):
+        if self.weight_mode.get() == "manual":
+            self.manual_frame.grid()
+        else:
+            self.manual_frame.grid_remove()
 
     def update_l_label(self, _=None):
         self.l_label.config(text=f"{round(self.l_percent.get())} %")
