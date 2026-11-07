@@ -273,8 +273,8 @@ SlumSession.prototype.selectMethod = function (method) {
 
 SlumSession.prototype.setLuminanceFraction = function (value) {
    if (this.prepared) throw new Error("Nach der Normalisierung bitte erneut analysieren.");
-   if (typeof value !== "number" || !isFinite(value) || value < 0.5 || value > 0.8)
-      throw new Error("L-Anteil muss zwischen 50 und 80 % liegen.");
+   if (typeof value !== "number" || !isFinite(value) || value < 0.2 || value > 0.8)
+      throw new Error("L-Anteil muss zwischen 20 und 80 % liegen.");
    this.lFraction = value;
 };
 

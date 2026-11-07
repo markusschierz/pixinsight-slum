@@ -80,7 +80,7 @@ class SlumApp:
         self.reference_box = ttk.Combobox(options, textvariable=self.reference, width=5, state="disabled")
         self.reference_box.grid(row=0, column=1, sticky="w", padx=pad)
         ttk.Label(options, text="L-Anteil").grid(row=1, column=0, sticky="w", pady=2)
-        ttk.Scale(options, from_=50, to=80, variable=self.l_percent, command=self.update_l_label).grid(
+        ttk.Scale(options, from_=20, to=80, variable=self.l_percent, command=self.update_l_label).grid(
             row=1, column=1, sticky="ew", padx=pad)
         self.l_label = ttk.Label(options, text="70 %", width=6, anchor="e")
         self.l_label.grid(row=1, column=2)
