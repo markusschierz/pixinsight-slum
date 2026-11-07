@@ -4,13 +4,11 @@ SLUM fuer PixInsight 1.9.6 oder neuer
 1. Das ZIP entpacken. Der Ordner SLUM muss diese sieben Dateien behalten:
    SLUM.js, SLUM.svg, slum-core.js, slum-stats.js, slum-spfc.js,
    slum-engine.js und slum-ui.js.
-2. In PixInsight Script > Feature Scripts... oeffnen.
-3. Add waehlen und den entpackten Ordner SLUM auswaehlen.
+2. In PixInsight Script > Feature Scripts... oeffnen. Vorhandene SLUM-
+   Eintraege aus alten oder temporaeren Ordnern entfernen.
+3. Add waehlen und nur den entpackten Ordner SLUM auswaehlen.
 4. Nach der Erkennung mit Done abschliessen. Das Skript erscheint unter
-   Script > Utilities > SLUM mit eigenem Icon.
-
-Alternativ kann PixInsight mit --script=/voller/Pfad/SLUM/SLUM.js gestartet
-werden. Zum dauerhaften Speichern der Eintragung PixInsight regulaer beenden.
+   Script > astro-foto.ch > SLUM mit eigenem Icon.
 
 Die Master muessen vor dem Lauf linear, registriert, gleich beschnitten und
 gradientenkorrigiert sein. Die Eingaben bleiben unveraendert.
