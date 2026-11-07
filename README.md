@@ -6,9 +6,15 @@ PixInsight-Skript zur Erzeugung einer linearen Super-Luminanz aus zwei bis vier 
 
 Das [führende Issue #1](https://github.com/markusschierz/pixinsight-slum/issues/1) bündelt den MVP; [Issue #11](https://github.com/markusschierz/pixinsight-slum/issues/11) führt SPFC und [Issue #13](https://github.com/markusschierz/pixinsight-slum/issues/13) die zweistufige Gewichtung. Interne Umsetzungsschritte werden nicht als eigene Issues angelegt.
 
+## Installation
+
+Die aktuelle [GitHub-Version](https://github.com/markusschierz/pixinsight-slum/releases/latest) enthält ein installierbares ZIP mit allen Skriptdateien und einem SVG-Icon. `SLUM-v1.0.0.zip` entpacken und in PixInsight 1.9.6 oder neuer **Script → Feature Scripts… → Add** öffnen. Den entpackten Ordner `SLUM` auswählen und die Erkennung abschließen. Danach liegt das Skript mit eigenem Icon unter **Script → Utilities → SLUM**. Die Dateien im Ordner `SLUM` zusammenlassen; `SLUM.js` lädt die weiteren JavaScript-Dateien relativ zu seinem Pfad.
+
+Im Entwicklungs-Checkout kann stattdessen der Ordner `src` über **Feature Scripts… → Add** eingebunden werden. Die Metadaten-Direktiven und dieser Installationsweg entsprechen der [PixInsight-PJSR-Dokumentation](https://pixinsight.com/doc/docs/PJSR/PJSR.html#lbl_metadata).
+
 ## Anwendung
 
-1. In PixInsight 1.9.6 oder neuer **Script → Execute Script** öffnen und [`src/SLUM.js`](src/SLUM.js) wählen.
+1. **Script → Utilities → SLUM** öffnen. Ohne Installation kann [`src/SLUM.js`](src/SLUM.js) weiterhin über **Script → Execute Script** ausgeführt werden.
 2. Für zwei bis vier Kanäle jeweils **Datei** oder **Ansicht** wählen. Die Ansichtsliste zeigt geöffnete PixInsight-Hauptansichten; **Aktualisieren** lädt sie nach dem Öffnen weiterer Bilder neu.
 3. **Analysieren** starten. Das Skript prüft die Eingaben, zeigt den SPFC-Status je Kanal und berechnet die Mediane. Normalisierung und Noise laufen jetzt noch nicht.
 4. Sind vollständige und vergleichbare SPFC-Daten vorhanden, ist **SPFC-Flux** vorausgewählt. Andernfalls SPFC außerhalb des Skripts nachholen und erneut analysieren oder **LinearFit verwenden (Fallback)** ausdrücklich wählen. Bei LinearFit wird L als Referenz vorgeschlagen, falls vorhanden, sonst der Kanal mit dem niedrigsten Median. Jeder ausgewählte Kanal kann als Referenz übersteuert werden, ohne die Analyse zu wiederholen.
@@ -25,6 +31,7 @@ RGBLUM ist ein interner Rechenschritt; es entsteht nur die gewählte SLUM-Ausgab
 
 ## Entwicklungsprüfung
 
+- Release-ZIP bauen: `python3 scripts/build-release.py v1.0.0`; die Ausgabe unter `dist/` bleibt ungetrackt. Das ZIP enthält nur die sieben nötigen Skript-/Icon-Dateien und `INSTALL.txt`.
 - Rechen- und Statistiktests: `node --test tests/*.test.cjs`
 - GitHub Actions führt diese Node-Tests bei Pull Requests und Pushes nach `main` aus. Der Check `node-tests` kann als erforderlicher Check für `main` gesetzt werden.
 - PixInsight-Probe: `/usr/bin/PixInsight --automation-mode --run=<absoluter Pfad zu tests/pjsr-probe.js> --force-exit`.
