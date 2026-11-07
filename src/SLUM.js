@@ -1,5 +1,5 @@
 #engine v8
-#feature-id    SLUM : Utilities > SLUM
+#feature-id    SLUM : astro-foto.ch > SLUM
 #feature-icon  SLUM.svg
 #feature-info  Erstellt eine lineare Super-Luminanz aus 2–4 registrierten Monochrom-Mastern.
 // Feature metadata: https://pixinsight.com/doc/docs/PJSR/PJSR.html#lbl_metadata

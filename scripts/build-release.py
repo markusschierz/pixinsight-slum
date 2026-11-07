@@ -23,7 +23,7 @@ CONTENTS = (
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("version", help="release tag, e.g. v1.0.0")
+    parser.add_argument("version", help="release tag, e.g. v1.0.1")
     parser.add_argument("--output-dir", type=Path, default=ROOT / "dist")
     args = parser.parse_args()
     if not re.fullmatch(r"v\d+\.\d+\.\d+", args.version):
@@ -33,9 +33,9 @@ def main():
     includes = set(re.findall(r'^#include\s+"([^"]+)"', script, re.M))
     if not includes or not includes <= targets:
         raise ValueError(f"script includes are missing from the package: {includes - targets}")
-    if not re.search(r"^#feature-id\s+SLUM\s*:", script, re.M) or \
+    if not re.search(r"^#feature-id\s+SLUM\s*:\s*astro-foto\.ch\s*>\s*SLUM\s*$", script, re.M) or \
             not re.search(r"^#feature-icon\s+SLUM\.svg\s*$", script, re.M):
-        raise ValueError("SLUM feature ID or icon directive is missing")
+        raise ValueError("SLUM menu path or icon directive is missing")
     ET.parse(ROOT / "src/SLUM.svg")
     args.output_dir.mkdir(parents=True, exist_ok=True)
     output = args.output_dir / f"SLUM-{args.version}.zip"
