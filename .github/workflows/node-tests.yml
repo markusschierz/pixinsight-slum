@@ -18,5 +18,17 @@ jobs:
         with:
           node-version: '22'
       - run: node --test tests/*.test.cjs
-      - run: python3 scripts/build-release.py v1.0.1
-      - run: python3 -m zipfile -t dist/SLUM-v1.0.1.zip
+      - run: python3 scripts/build-release.py v1.1.0
+      - run: python3 -m zipfile -t dist/SLUM-v1.1.0.zip
+      - run: python3 -m zipfile -t dist/SLUM-Siril-v1.1.0.zip
+
+  python-tests:
+    name: python-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install numpy
+      - run: python -m unittest discover -s tests/siril -p "test_*.py"

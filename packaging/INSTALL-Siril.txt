@@ -1,0 +1,22 @@
+SLUM fuer Siril 1.4 oder neuer
+===============================
+
+1. Das ZIP entpacken. Der Ordner SLUM-Siril muss diese Dateien zusammenbehalten:
+   SLUM.py, slum_core.py, slum_stats.py, slum_engine.py und slum_siril.py.
+2. In Siril Einstellungen > Skripte den Ordner SLUM-Siril (oder dessen
+   Elternordner) in die Skriptpfade aufnehmen und die Skriptliste aktualisieren.
+   Alternativ den Ordner in das Siril-Skriptverzeichnis kopieren
+   (Linux: ~/.local/share/siril-scripts).
+3. SLUM.py ueber das Skriptmenue starten. Siril richtet die Python-Umgebung
+   mit numpy selbst ein.
+
+Bedienung: Je Kanal L, R, G, B eine Datei oder das aktuell geladene Siril-Bild
+waehlen (mindestens zwei Kanaele), Sampling pruefen, Analysieren, dann SLUM
+erstellen. Das Ergebnis ist eine neue 32-Bit-FITS-Datei; Originale werden nicht
+veraendert und vorhandene Dateien nie ueberschrieben.
+
+Die Master muessen vor dem Lauf linear, registriert, gleich beschnitten und
+gradientenkorrigiert sein. Nur monochrome Bilder mit Werten in [0, 1] werden
+akzeptiert. SPFC-Flux gibt es in der Siril-Version nicht; es wird LinearFit
+verwendet. Die Rauschmessung ist eine eigene Umsetzung und weicht leicht von
+PixInsights NoiseEvaluation ab.
