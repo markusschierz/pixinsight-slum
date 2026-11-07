@@ -204,7 +204,7 @@ SlumSession.prototype.analyze = function (config, referenceOverride, progress) {
             } else if (image.width !== this.width || image.height !== this.height)
                throw new Error(row.id + ": Bildabmessungen weichen ab.");
             var keywords = keywordMap(sourceWindow);
-            var spfc = readSpfc(sourceView, row.source === "view" && sourceWindow.isModified);
+            var spfc = readSpfc(sourceView);
             signatures.push(geometrySignature(keywords));
             astrometry.push(astrometricPoints(sourceWindow, image.width, image.height));
             var work = new ImageWindow(image.width, image.height, 1, 32, true, false,

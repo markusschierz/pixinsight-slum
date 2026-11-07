@@ -18,9 +18,9 @@ jobs:
         with:
           node-version: '22'
       - run: node --test tests/*.test.cjs
-      - run: python3 scripts/build-release.py v1.2.0
-      - run: python3 -m zipfile -t dist/SLUM-v1.2.0.zip
-      - run: python3 -m zipfile -t dist/SLUM-Siril-v1.2.0.zip
+      - run: python3 scripts/build-release.py v1.2.1
+      - run: python3 -m zipfile -t dist/SLUM-v1.2.1.zip
+      - run: python3 -m zipfile -t dist/SLUM-Siril-v1.2.1.zip
 
   python-tests:
     name: python-tests

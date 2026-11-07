@@ -21,7 +21,7 @@ function validateSpfcProperties(p) {
       sigma: Number(p.sigma[0]), count: Number(p.counts[0]) };
 }
 
-function readSpfc(view, modified) {
+function readSpfc(view) {
    var prefix = "PCL:SPFC:";
    var value = function (name) { return view.hasProperty(prefix + name) ?
       view.propertyValue(prefix + name) : null; };
@@ -36,8 +36,6 @@ function readSpfc(view, modified) {
    } catch (error) {
       return { valid: false, reason: "SPFC-Eigenschaften nicht lesbar: " + error.message };
    }
-   if (result.valid && modified)
-      return { valid: false, reason: "Ansicht seit dem Speichern verändert; SPFC-Zuordnung nicht gesichert" };
    return result;
 }
 

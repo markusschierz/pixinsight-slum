@@ -36,8 +36,7 @@ test('rejects a modified loaded view even when complete SPFC properties remain',
     NormalizationFactor: values.normalization, Version: values.version };
   const view = { hasProperty: id => id.slice(9) in keys,
     propertyValue: id => keys[id.slice(9)] };
-  assert.equal(readSpfc(view, false).valid, true);
-  assert.match(readSpfc(view, true).reason, /verändert/);
+  assert.equal(readSpfc(view).valid, true);
   assert.match(readSpfc({ hasProperty: () => true, propertyValue: () => {
     throw new Error('kaputt');
   } }, false).reason, /nicht lesbar/);

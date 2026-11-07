@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MIT
 # SLUM für Siril: lineare Super-Luminanz aus 2-4 registrierten L-, R-, G-, B-Mastern.
-# Version 1.2.0
+# Version 1.2.1
 #
 # Aufruf in Siril: Scripts > SLUM.py (SLUM.py direkt im Skriptpfad, die Module im Unterordner slum_lib).
 # Die Master müssen linear, registriert, gleich beschnitten und gradientenkorrigiert sein.
