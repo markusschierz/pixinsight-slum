@@ -72,3 +72,9 @@ Die Gruppen-Slider-Regel des vorherigen Abschnitts ist abgelöst. Die aktuellen 
 | UI | Nativer Dialog für Analyse, Auto, Manuell und gemischtes 3×3-Sampling gerendert. Die Reihenfolge Bilder → Analysieren → Normalisierung → Gewichtung → Ausgabe, beschriftete Ansichten-Aktualisierung, konkrete Sperrgründe und Ergebniszeile wurden geprüft. Tastatur-Tabbing bleibt bei PixInsights nativen Controls; der Nutzer hat die frühere Tab-Navigation bestätigt, die neue Gewichtungszeile wird bei Verwendung des fertigen Skripts geprüft. |
 
 Die Rechenfunktion besteht Node-Tests für 50/80-%-L-Grenzen, manuelle 0/100-%-Grenzen, L plus einen Farbkanal, RGB ohne L, gemischtes Sampling und ungültige Gewichte. Die aktuellen nativen Berichte liegen unter `/tmp/pjsr-*-probe.txt` und sind flüchtig.
+
+## Vereinfachter Dialog ohne Bestätigungs-Checkboxen
+
+Auf Nutzerwunsch entfallen der Text unter dem L-Slider, die zusätzliche Auto-Statuszeile und beide Bestätigungs-Checkboxen. Der native Dialog wurde mit RGB ohne L und L 2×2/RGB 3×3 erneut gerendert. Die PixInsight-Proben zeigen, dass SPFC und ein ausdrücklich gewählter LinearFit-Fallback ohne Checkboxen ausgabebereit sind; RGB-Manuell mit fehlendem oder überhöhtem Gewicht bleibt gesperrt. Datei- und Ansichtsausgabe, Pixelwerte, Originalschutz und Abbruch-Cleanup sind unverändert.
+
+Bei fehlender oder nicht eindeutig gleicher WCS bleibt die Ausgabe möglich und das Protokoll weist auf die nicht sicher prüfbare Registrierung hin. Verschiedene Bildabmessungen und deutliche WCS-Versätze werden weiterhin abgewiesen. Die Eingaben müssen vor dem Skriptlauf korrekt registriert sein; das Skript registriert oder resampelt sie nicht.

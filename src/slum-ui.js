@@ -147,11 +147,6 @@ class SlumDialog extends Dialog {
          }
       };
       main.add(this.lShare);
-      this.lShareHint = new Label(this);
-      this.lShareHint.text = "RGBLUM erhält den Rest; R/G/B werden darin nach Noise gewichtet.";
-      this.lShareHint.visible = false;
-      main.add(this.lShareHint);
-
       var weightModeRow = new HorizontalSizer;
       weightModeRow.spacing = 6;
       this.rgbWeightLabel = new Label(this);
@@ -201,16 +196,6 @@ class SlumDialog extends Dialog {
       main.add(manualRow);
       main.add(outRow);
       main.add(fileRow);
-      this.prerequisite = new CheckBox(this);
-      this.prerequisite.text = "Linearität, Registrierung, gleichen Ausschnitt und Gradientenkorrektur bestätigt";
-      this.prerequisite.onCheck = () => this.refreshSummary();
-      main.add(this.prerequisite);
-      this.registration = new CheckBox(this);
-      this.registration.text = "Gleiches registriertes Ausgaberaster trotz unsicherer WCS-Daten bestätigt";
-      this.registration.visible = false;
-      this.registration.onCheck = () => this.refreshSummary();
-      main.add(this.registration);
-
       this.resultSummary = new Label(this);
       this.resultSummary.visible = false;
       main.add(this.resultSummary);
@@ -362,8 +347,6 @@ class SlumDialog extends Dialog {
       this.outputEdit.enabled = enabled;
       this.outputBrowse.enabled = enabled;
       this.outputMode.enabled = enabled;
-      this.prerequisite.enabled = enabled;
-      this.registration.enabled = enabled;
       this.rgbMode.enabled = enabled && this.analyzed;
       for (var id of ["R", "G", "B"])
          this.manualFields[id].edit.enabled = enabled && this.analyzed;
@@ -399,7 +382,6 @@ class SlumDialog extends Dialog {
       this.session.close();
       this.analyzed = false;
       this.lShare.visible = false;
-      this.lShareHint.visible = false;
       this.hideWeightControls();
       this.methodCombo.enabled = false;
       this.referenceCombo.enabled = false;
@@ -445,7 +427,6 @@ class SlumDialog extends Dialog {
          this.methodCombo.enabled = true;
          this.referenceCombo.enabled = false;
          this.suppress = false;
-         this.registration.visible = !this.session.registrationCertain;
          this.refreshWeightControls();
          this.adjustToContents();
          this.status.text = this.session.spfcAvailable ?
@@ -456,7 +437,6 @@ class SlumDialog extends Dialog {
          this.suppress = false;
          this.analyzed = false;
          this.lShare.visible = false;
-         this.lShareHint.visible = false;
          this.hideWeightControls();
          this.methodCombo.enabled = false;
          this.referenceCombo.enabled = false;
@@ -504,29 +484,14 @@ class SlumDialog extends Dialog {
       var hasL = this.session.rows.some(function (row) { return row.id === "L"; });
       var manual = this.rgbMode.currentItem === 1 && colors.length > 1;
       this.lShare.visible = hasL;
-      this.lShareHint.visible = hasL;
-      this.lShareHint.text = manual ?
-         "RGBLUM erhält den Rest; R/G/B werden darin manuell gewichtet." :
-         "RGBLUM erhält den Rest; R/G/B werden darin nach Noise gewichtet.";
-      this.rgbWeightLabel.visible = colors.length > 0;
+      this.rgbWeightLabel.visible = colors.length > 1;
       this.rgbMode.visible = colors.length > 1;
-      this.rgbHint.visible = colors.length > 0;
-      var groups = [];
-      for (var i = 0; i < colors.length; ++i) {
-         try {
-            var group = samplingKey(this.channels[colors[i]].sampling.text);
-            if (groups.indexOf(group) < 0) groups.push(group);
-         } catch (_) { /* Summary shows missing or invalid sampling. */ }
-      }
-      if (colors.length === 1) {
-         this.rgbHint.text = colors[0] + " erhält " +
-            (hasL ? "100 % von RGBLUM." : "100 % der SLUM.");
-      } else if (manual) {
+      this.rgbMode.toolTip = manual ?
+         "Manuelle Gewichte gelten innerhalb RGBLUM und lassen den L-Anteil unverändert." :
+         "Automatische RGB-Gewichte folgen dem Noise nach Normalisierung. Bei gemischtem Sampling ist das eine Heuristik.";
+      this.rgbHint.visible = manual;
+      if (manual)
          this.rgbHint.text = "RGB-Gewichte: erste Werte eingeben, letzter Kanal = Rest zu 100 %.";
-      } else {
-         this.rgbHint.text = "Automatisch nach Noise bei der Ausgabe" +
-            (groups.length > 1 ? "; bei gemischtem Sampling eine Heuristik." : ".");
-      }
       for (var id of ["R", "G", "B"]) {
          var field = this.manualFields[id];
          var selected = manual && colors.indexOf(id) >= 0;
@@ -591,14 +556,11 @@ class SlumDialog extends Dialog {
          lines.push("Zwei Stufen: SLUM = " +
             (100 * this.session.lFraction).toFixed(0) + "% L + " +
             (100 * (1 - this.session.lFraction)).toFixed(0) + "% RGBLUM");
-      lines.push("RGB-Sampling-Gewichtung: " +
-         (this.rgbMode.currentItem === 1 && this.colorIds().length > 1 ?
-            "manuell" : "automatisch nach Noise bei Ausgabe"));
       if (this.session.method === "linearFit")
          lines.push("Referenzempfehlung: " + this.session.recommended +
             "   Gewählte Referenz: " + this.session.reference);
       if (!this.session.registrationCertain)
-         lines.push("Registriertes Ausgaberaster anhand der WCS nicht sicher: Bestätigung erforderlich.");
+         lines.push("Registriertes Ausgaberaster anhand der WCS nicht sicher prüfbar; Eingaben müssen bereits registriert sein.");
       var valid = true;
       var reason = "";
       var selectedColors = this.colorIds();
@@ -635,17 +597,9 @@ class SlumDialog extends Dialog {
       } else {
          lines.push("Ausgabe: neue SLUM-Ansicht in PixInsight (keine Datei)");
       }
-      if (!this.prerequisite.checked) {
-         valid = false;
-         if (!reason) reason = "Bildvorbedingungen bestätigen.";
-      }
       if (!this.session.method) {
          valid = false;
          reason = "SPFC vervollständigen oder LinearFit ausdrücklich wählen.";
-      }
-      if (!this.session.registrationCertain && !this.registration.checked) {
-         valid = false;
-         if (!reason) reason = "Gemeinsames registriertes Raster bestätigen.";
       }
       this.report.text = lines.join("\n");
       this.saveButton.enabled = valid;
@@ -703,13 +657,11 @@ class SlumDialog extends Dialog {
          }
          if (this.outputMode.currentItem === 0) {
             this.session.create(this.outputEdit.text.trim(), sampling, this.manualWeights(),
-               this.session.registrationCertain || this.registration.checked,
                stage => this.progress(stage));
             this.report.text += "\n\nFertig: " + this.outputEdit.text.trim();
             this.status.text = "SLUM-Datei gespeichert.";
          } else {
             var result = this.session.createView(sampling, this.manualWeights(),
-               this.session.registrationCertain || this.registration.checked,
                stage => this.progress(stage));
             this.lastOutputViewId = result.viewId;
             this.report.text += "\n\nFertig: SLUM-Ansicht " + result.viewId;

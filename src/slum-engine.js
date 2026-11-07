@@ -92,7 +92,7 @@ function sameAstrometricPoints(a, b) {
 
 function nearAstrometricPoints(a, b, width, height) {
    // Independent plate solves can differ slightly even when the pixels are
-   // registered. Up to two output pixels requires explicit user confirmation.
+   // registered. Reject offsets over two output pixels; report smaller uncertainty.
    var raSpan = Math.abs(a[0][0] - a[1][0]);
    raSpan = Math.min(raSpan, 360 - raSpan);
    var dec = (a[0][1] + a[1][1]) * Math.PI / 360;
@@ -335,10 +335,8 @@ SlumSession.prototype.captureRun = function (weights) {
       }) };
 };
 
-SlumSession.prototype.checkReady = function (registrationConfirmed) {
+SlumSession.prototype.checkReady = function () {
    if (!this.rows.length) throw new Error("Zuerst Bilder analysieren.");
-   if (!this.registrationCertain && !registrationConfirmed)
-      throw new Error("Gleiches registriertes Raster bitte ausdrücklich bestätigen.");
 };
 
 SlumSession.prototype.renderOutput = function (weights, outputId) {
@@ -380,9 +378,9 @@ SlumSession.prototype.renderOutput = function (weights, outputId) {
    }
 };
 
-SlumSession.prototype.create = function (path, sampling, manualWeights, registrationConfirmed, progress) {
+SlumSession.prototype.create = function (path, sampling, manualWeights, progress) {
    progress = progress || function () {};
-   this.checkReady(registrationConfirmed);
+   this.checkReady();
    if (!/\.xisf$/i.test(path)) throw new Error("Ausgabe muss eine .xisf-Datei sein.");
    if (File.exists(path)) throw new Error("Ausgabedatei existiert bereits.");
    this.validateMix(sampling, manualWeights);
@@ -411,9 +409,9 @@ SlumSession.prototype.create = function (path, sampling, manualWeights, registra
    }
 };
 
-SlumSession.prototype.createView = function (sampling, manualWeights, registrationConfirmed, progress) {
+SlumSession.prototype.createView = function (sampling, manualWeights, progress) {
    progress = progress || function () {};
-   this.checkReady(registrationConfirmed);
+   this.checkReady();
    this.validateMix(sampling, manualWeights);
    var output = null;
    var completed = false;

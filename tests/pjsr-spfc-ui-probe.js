@@ -13,9 +13,7 @@ try {
    d.channels.R.path.text=root+"flux-samples/R_FLUX.xisf";
    d.outputMode.currentItem=1;
    d.outputModeChanged();
-   d.prerequisite.checked=true;
    d.analyze("");
-   d.registration.checked=true;
    d.refreshSummary();
    report.outTextLn("spfc="+d.session.spfcAvailable+" method="+d.session.method+
       " selected="+d.methodCombo.currentItem+" ready="+d.saveButton.enabled+
@@ -34,7 +32,6 @@ try {
    d.channels.L.path.text=root+"sample-data/L.fit";
    d.channels.R.path.text=root+"sample-data/R.fit";
    d.analyze("");
-   d.registration.checked=true;
    d.refreshSummary();
    report.outTextLn("missing="+!d.session.spfcAvailable+" method="+d.session.method+
       " ready="+d.saveButton.enabled+" reason="+d.session.rows[0].spfc.reason);

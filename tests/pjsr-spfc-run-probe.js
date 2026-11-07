@@ -22,7 +22,7 @@ try {
       " recommended="+session.recommended+" valid="+rows.every(function(r){return r.spfc.valid}));
    session.setLuminanceFraction(0.65);
    let samples = rows.map(function(r){return r.view.image.sample(4000,3000)});
-   let result = session.createView({L:"1x1",R:"1x1",G:"1x1",B:"1x1"},null,true);
+   let result = session.createView({L:"1x1",R:"1x1",G:"1x1",B:"1x1"},null);
    output = View.viewById(result.viewId).window;
    let expected = 0;
    for (let i=0;i<rows.length;++i) {
@@ -46,7 +46,7 @@ try {
       B:{source:"file",path:root+"B_FLUX.xisf"}
    });
    let rgbSamples=rows.map(function(r){return r.view.image.sample(4000,3000)});
-   let rgbWeights=session.create(path,{R:"1x1",G:"1x1",B:"1x1"},null,true);
+   let rgbWeights=session.create(path,{R:"1x1",G:"1x1",B:"1x1"},null);
    let file=ImageWindow.open(path)[0];
    try {
       let rgbExpected=0;

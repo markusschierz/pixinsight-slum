@@ -37,7 +37,7 @@ try {
    let weights = session.weights({L:"1x1",R:"1x1"},null);
    let expected = weights[0].weight * rows[0].view.image.sample(40,60) +
       weights[1].weight * rows[1].view.image.sample(40,60);
-   session.create(output,{L:"1x1",R:"1x1"},null,true);
+   session.create(output,{L:"1x1",R:"1x1"},null);
    let result = ImageWindow.open(output)[0];
    report.outTextLn("pixelDifference=" + Math.abs(expected-result.mainView.image.sample(40,60)));
    result.forceClose();

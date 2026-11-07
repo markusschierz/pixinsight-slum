@@ -32,7 +32,7 @@ try {
          " sampling=" + rows[i].sampling);
    let expected = NaN;
    let outputStart = Date.now();
-   let weights = session.create(output,{L:"1x1",R:"1x1",G:"1x1",B:"1x1"},null,true,
+   let weights = session.create(output,{L:"1x1",R:"1x1",G:"1x1",B:"1x1"},null,
       function(stage) {
          if (stage === "SLUM wird berechnet") {
             let expectedWeights = session.weights({L:"1x1",R:"1x1",G:"1x1",B:"1x1"},null);
@@ -60,7 +60,7 @@ try {
       G:{path:root+"G.fit"}, B:{path:root+"B.fit"} }, "R");
    session.selectMethod("linearFit");
    report.outTextLn("RGB recommended=" + session.recommended + " actual=" + session.reference);
-   let rgbWeights = session.create(output,{R:"1x1",G:"1x1",B:"1x1"},null,true);
+   let rgbWeights = session.create(output,{R:"1x1",G:"1x1",B:"1x1"},null);
    report.outTextLn("RGB weights=" + rgbWeights.map(function(w){return w.id+":"+w.weight}).join(","));
    let rgb = ImageWindow.open(output)[0];
    report.outTextLn("RGB output=" + rgb.mainView.image.numberOfChannels + ":" +

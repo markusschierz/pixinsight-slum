@@ -37,7 +37,7 @@ try {
    let weights = session.weights({L:"1x1",R:"1x1"},null);
    let expected = weights[0].weight * rows[0].view.image.sample(40,60) +
       weights[1].weight * rows[1].view.image.sample(40,60);
-   let result = session.createView({L:"1x1",R:"1x1"},null,true);
+   let result = session.createView({L:"1x1",R:"1x1"},null);
    let resultView = View.viewById(result.viewId);
    resultWindow = resultView.window;
    report.outTextLn("viewId=" + result.viewId + " stillOpen=" +
@@ -65,8 +65,6 @@ try {
    dialog.outputEdit.text = unexpectedFile;
    dialog.outputMode.currentItem = 1;
    dialog.outputModeChanged();
-   dialog.prerequisite.checked = true;
-   dialog.registration.checked = true;
    dialog.refreshSummary();
    report.outTextLn("viewModeEnabled=" + dialog.saveButton.enabled +
       " pathHidden=" + !dialog.outputEdit.visible);
@@ -85,7 +83,7 @@ try {
    session.analyze(config);
    session.selectMethod("linearFit");
    try {
-      session.createView({L:"1x1",R:"1x1"},null,true,function(stage) {
+      session.createView({L:"1x1",R:"1x1"},null,function(stage) {
          if (stage === "SLUM-Ansicht wird ausgegeben") throw new Error("Abbruchprobe");
       });
       report.outTextLn("cancelRejected=false");
