@@ -32,13 +32,11 @@ try {
    dialog.channels.B.path.text = inputs[1];
    dialog.outputEdit.text = output;
    dialog.analyze("");
+   dialog.methodCombo.currentItem=2;
    dialog.methodCombo.onItemSelected(2);
-   report.outTextLn("reference=" + dialog.session.reference + " groups=" + dialog.groupNames.join(","));
-   report.outTextLn("withoutSharesEnabled=" + dialog.saveButton.enabled);
-   dialog.groupSliders[0].setValue(70);
-   dialog.groupSliders[0].onValueUpdated(70);
-   dialog.refreshSummary();
+   report.outTextLn("reference=" + dialog.session.reference + " mode=" + dialog.rgbMode.currentItem);
    report.outTextLn("withoutConfirmationsEnabled=" + dialog.saveButton.enabled);
+   dialog.refreshSummary();
    dialog.prerequisite.checked = true;
    dialog.refreshSummary();
    report.outTextLn("withoutRasterConfirmationEnabled=" + dialog.saveButton.enabled);
@@ -46,15 +44,27 @@ try {
    dialog.refreshSummary();
    report.outTextLn("saveEnabled=" + dialog.saveButton.enabled);
    let analyzedRows = dialog.session.rows;
+   dialog.rgbMode.currentItem=1;
+   dialog.rgbMode.onItemSelected(1);
+   dialog.manualFields.R.edit.text="60";
+   dialog.refreshSummary();
+   report.outTextLn("rgbOnlyManual="+dialog.saveButton.enabled+
+      " B="+dialog.manualFields.B.computed.text+
+      " sameAnalysis="+(dialog.session.rows===analyzedRows));
+   dialog.rgbMode.currentItem=0;
+   dialog.rgbMode.onItemSelected(0);
+   dialog.referenceCombo.currentItem=2;
    dialog.referenceCombo.onItemSelected(2);
-   report.outTextLn("override=" + dialog.session.reference + " shares=" +
-      (100 * dialog.shares()["1x1"]) + "," + (100 * dialog.shares()["2x2"]) +
+   report.outTextLn("override=" + dialog.session.reference + " auto=" +
+      (dialog.manualWeights()===null) +
       " reusedRows=" + (dialog.session.rows === analyzedRows));
    dialog.refreshSummary();
    report.outTextLn("afterOverrideEnabled=" + dialog.saveButton.enabled);
    dialog.render().save("/tmp/slum-ui-probe.png");
    dialog.create();
    report.outTextLn("created=" + File.exists(output) + " status=" + dialog.status.text);
+   report.outTextLn("result="+dialog.resultSummary.text);
+   dialog.render().save("/tmp/slum-ui-result-probe.png");
    report.outTextLn("resultHasNoise=" + (dialog.report.text.indexOf("Noise nach Normalisierung:")>=0) +
       " resultHasWeights=" + (dialog.report.text.indexOf("Endgewichte:")>=0));
    File.remove(output);

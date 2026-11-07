@@ -18,12 +18,11 @@ function chooseReference(channels) {
    return best.id;
 }
 
-function computeWeights(channels, shares) {
+function computeWeights(channels, manualWeights) {
    if (!channels || channels.length < 1 || channels.length > 4)
       throw new Error("Bitte ein bis vier Kanäle gewichten.");
-   var groups = Object.create(null);
-   var groupNames = [];
    var seen = Object.create(null);
+   var minNoise = Infinity;
    for (var i = 0; i < channels.length; ++i) {
       var row = channels[i];
       if (!/^[LRGB]$/.test(row.id) || seen[row.id] ||
@@ -31,59 +30,52 @@ function computeWeights(channels, shares) {
           !isFinite(row.noise) || row.noise <= 0)
          throw new Error("Ungültiger Kanal, Sampling-Gruppe oder Noise-Wert.");
       seen[row.id] = true;
-      if (!Object.prototype.hasOwnProperty.call(groups, row.group)) {
-         groups[row.group] = [];
-         groupNames.push(row.group);
-      }
-      groups[row.group].push(row);
+      minNoise = Math.min(minNoise, row.noise);
    }
-   if (groupNames.length > 1) {
-      if (!shares) throw new Error("Gruppenanteile müssen zusammen 100 % ergeben.");
-      var shareSum = 0;
-      for (var g = 0; g < groupNames.length; ++g) {
-         var share = shares[groupNames[g]];
-         if (!isFinite(share) || share < 0 || share > 1)
-            throw new Error("Ungültiger Gruppenanteil.");
-         shareSum += share;
+   var denominator = 0;
+   if (manualWeights) {
+      if (Object.keys(manualWeights).length !== channels.length)
+         throw new Error("Manuelles Kanalgewicht fehlt oder ist überzählig.");
+      for (var j = 0; j < channels.length; ++j) {
+         var share = manualWeights[channels[j].id];
+         if (typeof share !== "number" || !isFinite(share) || share < 0 || share > 1)
+            throw new Error("Ungültiges manuelles Kanalgewicht.");
+         denominator += share;
       }
-      if (Math.abs(shareSum - 1) > 1e-9)
-         throw new Error("Gruppenanteile müssen zusammen 100 % ergeben.");
+      if (Math.abs(denominator - 1) > 1e-9)
+         throw new Error("Manuelle Kanalgewichte müssen zusammen 100 % ergeben.");
+   } else {
+      for (var k = 0; k < channels.length; ++k)
+         denominator += Math.pow(minNoise / channels[k].noise, 2);
    }
    var result = [];
-   for (var j = 0; j < channels.length; ++j) {
-      var channel = channels[j];
-      var members = groups[channel.group];
-      var minNoise = members[0].noise;
-      for (var k = 1; k < members.length; ++k)
-         minNoise = Math.min(minNoise, members[k].noise);
-      var denominator = 0;
-      for (var m = 0; m < members.length; ++m)
-         denominator += Math.pow(minNoise / members[m].noise, 2);
-      var fraction = Math.pow(minNoise / channel.noise, 2) / denominator;
+   for (var m = 0; m < channels.length; ++m) {
+      var channel = channels[m];
       result.push({
          id: channel.id,
          group: channel.group,
          noise: channel.noise,
-         weight: fraction * (groupNames.length === 1 ? 1 : shares[channel.group])
+         weight: manualWeights ? manualWeights[channel.id] :
+            Math.pow(minNoise / channel.noise, 2) / denominator
       });
    }
    return result;
 }
 
-function computeSlumMix(channels, shares, lFraction) {
+function computeSlumMix(channels, manualWeights, lFraction) {
    if (!channels || channels.length < 2 || channels.length > 4)
       throw new Error("Bitte zwei bis vier Kanäle auswählen.");
    var hasL = channels.some(function (row) { return row.id === "L"; });
    if (!hasL)
-      return { weights: computeWeights(channels, shares), rgbWeights: null,
-         lFraction: null };
+      return { weights: computeWeights(channels, manualWeights), rgbWeights: null,
+         lFraction: null, weightMode: manualWeights ? "manual" : "auto" };
    if (typeof lFraction !== "number" || !isFinite(lFraction) ||
        lFraction < 0.5 || lFraction > 0.8)
       throw new Error("L-Anteil muss zwischen 50 und 80 % liegen.");
    var luminance = channels.filter(function (row) { return row.id === "L"; });
    var colors = channels.filter(function (row) { return row.id !== "L"; });
    computeWeights(luminance, null); // validate L independently of RGB sampling
-   var rgbWeights = computeWeights(colors, shares);
+   var rgbWeights = computeWeights(colors, manualWeights);
    var weights = channels.map(function (row) {
       if (row.id === "L")
          return { id: row.id, group: row.group, noise: row.noise,
@@ -93,7 +85,7 @@ function computeSlumMix(channels, shares, lFraction) {
          weight: (1 - lFraction) * rgb.weight };
    });
    return { weights: weights, rgbWeights: rgbWeights,
-      lFraction: lFraction };
+      lFraction: lFraction, weightMode: manualWeights ? "manual" : "auto" };
 }
 
 if (typeof module !== "undefined" && module.exports)

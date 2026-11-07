@@ -29,18 +29,18 @@ try {
    session.selectMethod("linearFit");
    report.outTextLn("reference=" + session.recommended + " actual=" + session.reference);
    report.outTextLn("rows=" + rows.map(function(r){return r.id+":"+r.median+":"+r.noise+":"+r.sampling}).join(";"));
-   try { session.validateMix({R:"",B:"2x2"},{"1x1":0.7,"2x2":0.3}); }
+   try { session.validateMix({R:"",B:"2x2"},{R:0.7,B:0.3}); }
    catch(e) { report.outTextLn("missingSampling=" + String(e)); }
-   try { session.validateMix({R:"1x1",B:"2x2"},{"1x1":0.7,"2x2":0.2}); }
-   catch(e) { report.outTextLn("badShares=" + String(e)); }
-   try { session.create(output,{R:"1x1",B:"2x2"},{"1x1":0.7,"2x2":0.3},false); }
+   try { session.validateMix({R:"1x1",B:"2x2"},{R:0.7,B:0.2}); }
+   catch(e) { report.outTextLn("badWeights=" + String(e)); }
+   try { session.create(output,{R:"1x1",B:"2x2"},{R:0.7,B:0.3},false); }
    catch(e) { report.outTextLn("unconfirmedRaster=" + String(e)); }
-   try { session.create(paths[0],{R:"1x1",B:"2x2"},{"1x1":0.7,"2x2":0.3},true); }
+   try { session.create(paths[0],{R:"1x1",B:"2x2"},{R:0.7,B:0.3},true); }
    catch(e) { report.outTextLn("existingOutput=" + String(e)); }
    session.prepare();
    let expected = 0.7 * rows[0].view.image.sample(40,60) +
       0.3 * rows[1].view.image.sample(40,60);
-   let weights = session.create(output,{R:"1x1",B:"2x2"},{"1x1":0.7,"2x2":0.3},true);
+   let weights = session.create(output,{R:"1x1",B:"2x2"},{R:0.7,B:0.3},true);
    report.outTextLn("weights=" + weights.map(function(r){return r.weight}).join(","));
    let result = ImageWindow.open(output)[0];
    report.outTextLn("output=" + result.mainView.image.numberOfChannels + ":" + result.bitsPerSample + ":" + result.isFloatSample);
@@ -52,7 +52,7 @@ try {
    }); } catch(e) { report.outTextLn("analysisAbort="+String(e)+" windows="+session.windows.length); }
    session.analyze({R:{path:paths[0]},B:{path:paths[1]}});
    session.selectMethod("linearFit");
-   try { session.create(output,{R:"1x1",B:"2x2"},{"1x1":0.7,"2x2":0.3},true,
+   try { session.create(output,{R:"1x1",B:"2x2"},{R:0.7,B:0.3},true,
       function(stage){if(stage === "Temporäre XISF gespeichert") throw new Error("test abort");}); }
    catch(e){report.outTextLn("saveAbort="+String(e)+" output="+File.exists(output)+
       " partial="+File.exists("/tmp/slum-test-output.slum-partial.xisf")+

@@ -60,6 +60,7 @@ try {
    dialog.channels.R.viewList.getMainViews();
    dialog.channels.R.viewList.currentView = r.mainView;
    dialog.analyze("");
+   dialog.methodCombo.currentItem=2;
    dialog.methodCombo.onItemSelected(2);
    dialog.outputEdit.text = unexpectedFile;
    dialog.outputMode.currentItem = 1;
