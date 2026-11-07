@@ -1,5 +1,7 @@
 # Spezifikation: Zweistufige SLUM aus L und RGBLUM
 
+**Hinweis:** Der L-Anteil-Bereich wurde nach dieser Spec auf **20–80 %** erweitert (Standard weiter 70 %); Angaben „50…80“ unten sind überholt.
+
 **Status:** Durch den ausdrücklichen Umsetzungsauftrag vom 6. November 2026 fachlich freigegeben. Führendes [Feature-Issue #13](https://github.com/markusschierz/pixinsight-slum/issues/13). Ergänzt [SLUM-Spec](slum.md) und [SPFC-Spec](spfc.md). Die bisherige Gewichtsregel für LRGB wird nur an der hier beschriebenen Stelle ersetzt.
 
 **Aktuelle Erweiterung:** Die freigegebene automatische RGB-Gewichtung und die vollständige UI-Nachschärfung werden im führenden Issue #13 geführt. Die frühere Gruppen-Slider-Variante aus [Issue #15](https://github.com/markusschierz/pixinsight-slum/issues/15) wird dadurch ersetzt.

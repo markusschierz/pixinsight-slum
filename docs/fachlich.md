@@ -1,6 +1,14 @@
 # PixInsight Super-Luminanz – Workflow und Berechnungen
 
-Hier ist die konsolidierte Zusammenfassung des gesamten Chats mit den für eine spätere Implementierung relevanten Regeln, Formeln und Sonderfällen.
+Fachliche Grundlage von SLUM: Regeln, Formeln und Sonderfälle, die vor der Implementierung erarbeitet wurden.
+
+> **Stand:** Dieses Dokument beschreibt die Herleitung (Stand vor v1.0.0). Wo das Skript heute anders arbeitet, steht an der Stelle ein Hinweis „Heutiger Stand“. Verbindlich sind die [Specs](specs/slum.md) und der Code.
+>
+> **Heutiger Stand im Überblick:**
+> - Gewichtung `1/noise²` gilt innerhalb von R/G/B. Mit L entsteht `SLUM = a × L + (1−a) × RGBLUM`; `a` ist zwischen 20 und 80 % wählbar, Standard 70 % ([RGBLUM-Spec](specs/rgblum.md)). Die direkte LRGB-Gewichtung aus Abschnitt 1 und 2 bleibt Herleitung und Rechenbeispiel.
+> - SPFC-Flux wird bevorzugt als Normalisierung verwendet, LinearFit ist der Rückfall ([SPFC-Spec](specs/spfc.md)).
+> - Optional gibt es eine Korrektur gesättigter Sternränder ([Spec](specs/saturation.md)).
+> - Das Siril-Skript verwendet dieselben Regeln ([Spec](specs/siril.md)).
 
 ## Ziel
 
@@ -181,6 +189,8 @@ Das war eine Korrektur gegenüber einer frühen Empfehlung im Chat.
 
 ---
 
+> **Heutiger Stand:** Das Skript berechnet die Gewichte selbst, wendet sie über PixelMath an und lässt Rescale aus. Bei vorhandenem L wird nicht mehr direkt LRGB gewichtet, sondern zweistufig (siehe Abschnitt 10).
+
 ## 4. Empfohlener Workflow
 
 Für den Super-L-Zweig:
@@ -253,6 +263,8 @@ die anschließend tatsächlich kombiniert werden.
 Nicht aus älteren, unbearbeiteten Versionen.
 
 ---
+
+> **Heutiger Stand:** Das Skript nutzt SPFC, sofern alle gewählten Kanäle vollständige SPFC-Eigenschaften derselben Version haben (auch bei ungespeicherten Ansichten). Sonst fällt es auf LinearFit auf die Referenz zurück. SPFC muss als letzter Schritt nach allen Pixeländerungen laufen.
 
 ## 7. NoiseEvaluation versus SNR
 
@@ -437,6 +449,8 @@ Für die damaligen Daten wurde **70 % L / 30 % RGB-Luminanz** bevorzugt, da L:
 
 Wichtig für eine spätere Implementierung: **70/30 ist keine universelle mathematische Konstante.** Es war eine pragmatische Regel für diesen Datensatz.
 
+> **Heutiger Stand:** Das zweistufige Verfahren gilt für jedes Binning, sobald L und mindestens ein Farbkanal gewählt sind. Der L-Anteil ist ein Slider von 20 bis 80 % (Standard 70 %). Die RGB-Gewichte sind automatisch `1/noise²`, optional manuell übersteuerbar. Eine automatisch aus Noise gewählte L/RGB-Quote gibt es bewusst nicht.
+
 ---
 
 ## 11. Bessere algorithmische Behandlung von gemischtem Binning
@@ -574,4 +588,4 @@ Belichtungszeit oder Anzahl Subs sollten **nicht nochmals automatisch in dasselb
 11. RGB-Verarbeitung und SLUM-Verarbeitung als zwei getrennte Pfade behandeln.
 12. Belichtungszeit nicht zusätzlich in die Noise-Gewichtung einrechnen, wenn der Noise des fertigen Masters verwendet wird.
 
-Damit ist der gesamte bisherige Ansatz in eine Form gebracht, aus der sich direkt ein PixInsight-Script, ein kleines Desktop/Web-Tool oder eine Funktion in AstroLog/Astro-Forecast ableiten lässt.
+Daraus sind das PixInsight-Skript und das Siril-Skript entstanden.
