@@ -2,7 +2,7 @@
 
 **Status:** Durch den ausdrücklichen Umsetzungsauftrag vom 6. November 2026 fachlich freigegeben. Führendes [Feature-Issue #13](https://github.com/markusschierz/pixinsight-slum/issues/13). Ergänzt [SPEC.md](SPEC.md) und [SPEC-SPFC.md](SPEC-SPFC.md). Die bisherige Gewichtsregel für LRGB wird nur an der hier beschriebenen Stelle ersetzt.
 
-**UI-Nachschärfung:** Die Slider und die Darstellung von Bin 3×3 folgen [Issue #15](https://github.com/markusschierz/pixinsight-slum/issues/15).
+**Aktuelle Erweiterung:** Die freigegebene automatische RGB-Gewichtung und die vollständige UI-Nachschärfung werden im führenden Issue #13 geführt. Die frühere Gruppen-Slider-Variante aus [Issue #15](https://github.com/markusschierz/pixinsight-slum/issues/15) wird dadurch ersetzt.
 
 ## Zielgruppe und Problem
 
@@ -10,32 +10,32 @@ Astrofotografierende sollen der echten Luminanz in einer SLUM bewusst mehr Einfl
 
 ## Verhalten und Nutzungsablauf
 
-1. Sobald L und mindestens einer der Farbkanäle R/G/B ausgewählt sind, entsteht zuerst eine **logische RGB-Luminanz** `RGBLUM` aus genau den gewählten Farbkanälen. Sie wird nicht als zusätzliche Datei oder Ansicht ausgegeben. Innerhalb einer Sampling-Gruppe gelten die bestehenden `1/noise²`-Gewichte nach der gewählten SPFC- oder LinearFit-Normalisierung.
-2. Haben die gewählten Farbkanäle unterschiedliche native Sampling-Werte, legt der Nutzer die Anteile **zwischen diesen RGB-Sampling-Gruppen** wie bisher ausdrücklich fest; die Summe ist 100 %. L ist kein Mitglied dieser Gruppen. Bei einer RGB-Gruppe entfällt diese Eingabe.
+1. Sobald L und mindestens einer der Farbkanäle R/G/B ausgewählt sind, entsteht zuerst eine **logische RGB-Luminanz** `RGBLUM` aus genau den gewählten Farbkanälen. Sie wird nicht als zusätzliche Datei oder Ansicht ausgegeben. Standardmäßig werden R/G/B nach der gewählten SPFC- oder LinearFit-Normalisierung anhand ihrer endgültigen Noise-Werte mit `1/noise²` gewichtet. Dies gilt auch bei unterschiedlichem nativem Sampling auf demselben registrierten Ausgaberaster; dort ist das Ergebnis ausdrücklich eine Heuristik und kein allgemeingültiges Auflösungsoptimum.
+2. Optional kann der Nutzer die RGBLUM-internen **Kanalgewichte** manuell übersteuern. Alle gewählten Farbkanäle erhalten Werte von 0 bis 100 %, deren Summe 100 % beträgt. Der letzte gewählte Farbkanal erhält automatisch den Rest. Der manuelle Modus ersetzt die automatische RGB-Gewichtung vollständig, ändert aber weder den L-Anteil noch die Normalisierung und Noise-Messung. Natives Sampling jedes Masters bleibt anzugeben und zu prüfen; das Skript resampelt nicht.
 3. Das Ergebnis ist `SLUM = a × L + (1−a) × RGBLUM`. `a` ist einschließlich der Grenzen von **0,50 bis 0,80** in 0,01-Schritten wählbar, Startwert **0,70**. Der endgültige Anteil von L ist exakt `a`; die Farbkanäle teilen `1−a` nach ihren normierten RGBLUM-Gewichten. Die Endgewichte summieren sich zu 1.
-4. Bei einer Auswahl **ohne L** bleibt die bisherige Noise-/Sampling-Gruppengewichtung unverändert. Die L-Anteil-Steuerung erscheint nicht. Mit L und nur einem Farbkanal ist dieser Kanal `RGBLUM` mit internem Gewicht 1.
-5. Der L-Anteil und die RGB-Gruppenanteile lassen sich nach der Analyse ohne erneutes Laden, LinearFit, SPFC-Skalierung oder NoiseEvaluation ändern. Normalisierung, Noise und Kombination laufen weiter erst bei „SLUM erstellen“. Der Dialog erklärt die zwei Stufen und zeigt nach der Ausgabe `a`, die RGBLUM-internen Gewichte sowie alle endgültigen Kanalgewichte.
+4. Bei einer Auswahl **ohne L** gelten dieselben automatischen oder manuell übersteuerten RGB-Kanalgewichte direkt für SLUM; die L-Anteil-Steuerung erscheint nicht. Mit L und nur einem Farbkanal ist dieser Kanal `RGBLUM` mit internem Gewicht 1.
+5. Der L-Anteil und die Wahl Auto/Manuell samt manuellen RGB-Werten lassen sich nach der Analyse ohne erneutes Laden, LinearFit, SPFC-Skalierung oder NoiseEvaluation ändern. Normalisierung, Noise und Kombination laufen weiter erst bei „SLUM erstellen“. Das Ergebnisprotokoll nennt Gewichtungsmodus, Noise, `a`, die RGBLUM-internen und endgültigen Kanalgewichte.
 6. Datei- und Ansichtsquellen, SPFC-Vorrang und ausdrücklicher LinearFit-Fallback, Referenz-Override, registriertes Raster, Originalschutz, beide Ausgabearten, 32-Bit-Float ohne Rescaling, Abbruch/Cleanup und `count(%)`-Warnungen bleiben erhalten.
 
 ## UI-Design
 
-Der native PixInsight-Dialog zeigt nach der Analyse und nur bei einer Auswahl mit L den beschrifteten NumericControl **„L-Anteil an SLUM“** mit Slider und editierbarer Prozentzahl `50…80`, initial `70`. Ein Text daneben erläutert die RGBLUM-Gewichtung. Bei nur einer RGB-Sampling-Gruppe nennt er die Kanäle und Sampling-Werte; insbesondere braucht **L 2×2 mit R/G/B 3×3** keinen weiteren Gruppenanteil. Bei zwei RGB-Gruppen erscheint **ein Slider** für die erste Gruppe; die zweite erhält automatisch den Rest. Bei drei Gruppen erscheinen zwei Slider und die dritte erhält den Rest. Die Gruppen nennen Kanäle und Sampling (einschließlich 3×3); die Zusammenfassung übersetzt ihre RGBLUM-Anteile in Anteile an der fertigen SLUM. Eine Gruppenaufteilung muss der Nutzer durch Bewegen eines Sliders ausdrücklich festlegen. Die Zusammenfassung nennt vor der Ausgabe `L 70 % + RGBLUM 30 %`; endgültige Noise- und Kanalgewichte erscheinen erst nach der Ausgabe. Bei fehlendem oder ungültigem Sampling bzw. unbestätigten RGB-Gruppenanteilen bleibt „SLUM erstellen“ gesperrt.
+Der native PixInsight-Dialog folgt **Bilder → Analysieren → Normalisierung → Gewichtung → Ausgabe**. Der L-Anteil erscheint bei L plus Farbkanal als beschrifteter Slider `50…80`, initial `70`. Der Abschnitt **„RGB-Sampling-Gewichtung“** zeigt standardmäßig **„Automatisch (Noise bei Ausgabe)“** und bei gemischtem RGB-Sampling einen kurzen Heuristik-Hinweis. Die Option **„Manuell“** blendet eine nebeneinanderliegende Zeile `R [0–100 %]  G [0–100 %]  B [berechnet]` ein; bei einer Teilmenge erscheinen nur ihre gewählten Kanäle und der letzte erhält den Rest. Leere, ungültige und in Summe über 100 % liegende Eingaben sperren die Ausgabe mit einem nahen, konkreten Grund. Bei nur einem Farbkanal ist dessen Gewicht 100 % und die manuelle Wahl entfällt. Die Ergebnisübersicht zeigt Gewichte und Ausgabeziel, technische Details bleiben im scrollbaren Protokoll. Dateipfade sind vollständig per Tooltip erreichbar, der Ansichten-Aktualisieren-Knopf ist beschriftet und „Schließen“ wird während eines Laufs zu „Abbrechen“. PixInsights native Controls, Tastaturführung und Theme bleiben maßgeblich; keine Web-Optik wird nachgebaut.
 
 ## Nicht-Ziele
 
 - Eine zusätzlich sichtbare oder gespeicherte RGBLUM-Ansicht/-Datei.
-- Eine aus Noise automatisch gewählte L/RGB-Gruppenquote, manuelle Einzelgewichte für R/G/B oder ein L-Anteil außerhalb 50–80 %.
+- Eine aus Noise automatisch gewählte **L/RGB-Quote**, ein L-Anteil außerhalb 50–80 % oder eine behauptete optimale Auflösungsgewichtung bei gemischtem Binning.
 - Änderung der SPFC-/LinearFit-Normalisierung oder Vorverlagerung der rechenintensiven Schritte in die Analyse.
 
 ## Prüfbarkeit und Risiken
 
 1. LRGB mit gleichem Sampling und `a=0,70`: `wL=0,70`, `wR+wG+wB=0,30`, RGB-Anteile folgen `1/noise²`; Ausgabepixel entsprechen der zweistufigen Formel.
 2. Die Randwerte `0,50` und `0,80` funktionieren; außerhalb des Bereichs, NaN oder fehlende Werte werden abgewiesen. Ein Sliderwechsel verwendet die bestehende Analyse und löst keine Normalisierung/NoiseEvaluation aus.
-3. L plus Teilmenge, einschließlich nur eines Farbkanals, funktioniert. RGB ohne L folgt nachweislich der alten Gewichtung; die L-Steuerung bleibt verborgen.
-4. Bei L 1×1 und RGB 2×2 braucht es keine zweite L/RGB-Gruppenquote. Haben die Farbkanäle untereinander verschiedene Sampling-Gruppen, bleiben deren Anteile erforderlich und beziehen sich ausschließlich auf RGBLUM.
-5. L 2×2 und R/G/B 3×3 benötigt nur den L-Slider; PixInsight akzeptiert das Sampling aus Header oder Korrektur, sofern alle Bilder dasselbe registrierte Ausgaberaster haben. Bei zwei oder drei verschiedenen RGB-Gruppen setzen Slider die Anteile mit automatischem Rest; eine Änderung löst weder neue Analyse noch Normalisierung/NoiseEvaluation aus.
-5. Beide Normalisierungswege, Datei-/Ansichtseingabe und -ausgabe, Originalschutz, Fehlermeldungen und Cleanup bestehen die Regression. Ergebnisprotokoll nennt die tatsächlich verwendeten zwei Stufen und Endgewichte.
+3. L plus Teilmenge, einschließlich nur eines Farbkanals, funktioniert. RGB ohne L hat dieselbe Auto-/Manuell-Wahl; die L-Steuerung bleibt verborgen.
+4. L 2×2 mit R/G/B 3×3 sowie gemischte Sampling-Werte **innerhalb von RGB** führen ohne Gruppen-Slider zum Ergebnis. Automatische Gewichte folgen den nach der Ausgabe-Normalisierung gemessenen Noise-Werten; der gemischte Fall wird als Heuristik gekennzeichnet.
+5. Manuelle Gewichte `R=40 %, G=35 %, B=25 %` ergeben bei `a=0,70` endgültig `L=70 %, R=12 %, G=10,5 %, B=7,5 %`. 0/100-Grenzen, fehlende Werte und Summen über 100 % werden geprüft; der letzte Kanal wird berechnet. Ein Moduswechsel nach Analyse führt keine teure Berechnung aus.
+6. Beide Normalisierungswege, Datei-/Ansichtseingabe und -ausgabe, Originalschutz, Fehlermeldungen und Cleanup bestehen die Regression. Der überarbeitete Dialog wird für Start, Analyse, Auto, Manuell, Fehler und Erfolg nativ gerendert.
 
-**Risiko:** Ein gleichzeitig wirksamer alter Gruppenanteil und `a` würde L doppelt gewichten. Die Gruppenbildung muss deshalb bei vorhandenem L allein die Farbkanäle umfassen; eine einzige kanonische Gewichtsberechnung wird von Vorschauvalidierung und Ausgabe verwendet.
+**Risiko:** Ein alter Gruppenanteil darf nicht zusätzlich wirken. Auto und Manuell müssen denselben kanonischen Pfad verwenden. Bei gemischtem Sampling können Noise-Werte durch unterschiedliche Auflösung und Resampling beeinflusst sein; der Modus wird deshalb als Heuristik offengelegt und manuell übersteuerbar gemacht.
 
 **Offene fachliche Entscheidungen:** keine. Startwert 70 % folgt dem vorher diskutierten Beispiel und ist jederzeit veränderbar.

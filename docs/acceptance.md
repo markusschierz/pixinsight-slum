@@ -1,8 +1,8 @@
 # SLUM-MVP: Abnahmeprotokoll
 
-**Stand:** 6. November 2026 · PixInsight Core 1.9.6 Lockhart, PJSR V8 · führendes Issue [#1](https://github.com/markusschierz/pixinsight-slum/issues/1)
+**Stand:** 7. November 2026 · PixInsight Core 1.9.6 Lockhart, PJSR V8 · ursprüngliches Issue [#1](https://github.com/markusschierz/pixinsight-slum/issues/1), aktuelles Gewichtungs-Issue [#13](https://github.com/markusschierz/pixinsight-slum/issues/13)
 
-Die Zahlen im ersten Abschnitt dokumentieren den ursprünglichen MVP. Die aktuelle Mischung mit L folgt der [RGBLUM-Erweiterung](../SPEC-RGBLUM.md) und ist am Ende separat geprüft.
+Die bisherigen Abschnitte dokumentieren die jeweilige frühere Version einschließlich der später abgelösten Gruppen-Slider. Die aktuelle Auto-/Manuell-Regel folgt der [RGBLUM-Erweiterung](../SPEC-RGBLUM.md) und ist im letzten Abschnitt geprüft.
 
 ## Verifizierte Fälle
 
@@ -58,3 +58,17 @@ Die Abnahme umfasst Node-Tests der Grenzwerte 50/80 %, ungültiger Werte, L mit 
 Die native Probe mit **L 2×2 und R/G/B 3×3** liest die Sampling-Werte aus den synthetischen XISF-Headern, zeigt eine einzige RGB-Gruppe und verlangt keinen Gruppenanteil. Bei `a=0,60` entstehen L `0,60` und RGB zusammen `0,40`; die XISF-Pixelabweichung beträgt `3,63e-10`. Die native Dialogprobe zeigt den erklärenden Text und eine freigegebene Ausgabe ohne Gruppen-Slider.
 
 Bei **zwei verschiedenen RGB-Gruppen** ersetzt ein Prozent-Slider die zwei Textfelder: R 1×1 erhält 40 % von RGBLUM, G/B 2×2 automatisch 60 %. Die Zusammenfassung weist für `a=0,70` außerdem 12 % beziehungsweise 18 % an der fertigen SLUM aus. Bei **drei RGB-Gruppen** erzeugen zwei Slider die Aufteilung 30/40/30; beim Überschreiten von 100 % wird der andere Slider automatisch begrenzt. Ohne ausdrückliche Slider-Bewegung bleibt die Ausgabe bei mehreren Gruppen gesperrt. RGB-only-Dateiausgabe, Datei-/Ansichtsmischung, Referenzwechsel ohne Neuanalyse und unveränderte Originale wurden erneut nativ geprüft.
+
+## Aktuelle Auto-/Manuell-Gewichtung und UI-Audit (Issue #13)
+
+Die Gruppen-Slider-Regel des vorherigen Abschnitts ist abgelöst. Die aktuellen Gewichte werden für jeden gewählten RGB-Kanal direkt aus dem Noise nach der Normalisierung ermittelt. Bei gemischtem Sampling nennt der Dialog das Ergebnis eine Heuristik; eine manuelle Übersteuerung ist möglich.
+
+| Fall | Ergebnis |
+| --- | --- |
+| Auto mit gemischtem RGB-Sampling | Synthetische Ansichten L/R 1×1, G/B 2×2 und im Dialog B auf 3×3: L `0,70`, RGB zusammen `0,30`; RGB-Anteile entsprechen `1/noise²` über alle drei Farbkanäle. Pixelabweichung `3,73e-10`, L-Originalpixel unverändert. Auto ist ohne Gruppenaktion bereit, Noise wird erst bei der Ausgabe gemessen. |
+| Manueller Override | R `40 %`, G `35 %`, B automatisch `25 %` innerhalb RGBLUM. Endgewichte L `0,70`, R `0,12`, G `0,105`, B `0,075`; Pixelabweichung `3,35e-10`, L-Originalpixel unverändert. Eine Summe über 100 % sperrt die Hauptaktion mit konkretem Grund; Auto kann ohne neue Analyse wiederhergestellt werden. |
+| L 2×2, RGB 3×3 | Native XISF-Probe: L `0,60`, RGB zusammen `0,40`, Summe 1; Pixelabweichung `3,63e-10`. Ausgabe im Dialog ohne manuelle Gewichtseingabe bereit. |
+| Datei, Ansicht, SPFC, Fallback und Abbruch | Native Dialog-/Engine-Proben: Datei- und Ansichtsquellen, SPFC-Vorauswahl, ausdrücklicher LinearFit-Fallback und Referenz-Override laufen. Vor der Ausgabe sind Noise und Fit aufgeschoben; Abbruch nach temporärer XISF hinterlässt weder Ergebnis noch Teildatei und keine Arbeitsfenster. Originalansichten bleiben unverändert. |
+| UI | Nativer Dialog für Analyse, Auto, Manuell und gemischtes 3×3-Sampling gerendert. Die Reihenfolge Bilder → Analysieren → Normalisierung → Gewichtung → Ausgabe, beschriftete Ansichten-Aktualisierung, konkrete Sperrgründe und Ergebniszeile wurden geprüft. Tastatur-Tabbing bleibt bei PixInsights nativen Controls; der Nutzer hat die frühere Tab-Navigation bestätigt, die neue Gewichtungszeile wird bei Verwendung des fertigen Skripts geprüft. |
+
+Die Rechenfunktion besteht Node-Tests für 50/80-%-L-Grenzen, manuelle 0/100-%-Grenzen, L plus einen Farbkanal, RGB ohne L, gemischtes Sampling und ungültige Gewichte. Die aktuellen nativen Berichte liegen unter `/tmp/pjsr-*-probe.txt` und sind flüchtig.

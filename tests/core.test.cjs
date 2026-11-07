@@ -29,26 +29,25 @@ test('normalizes inverse variance weights for equal sampling', () => {
   assert.ok(Math.abs(result[2].weight - 0.23769) < 0.00002);
 });
 
-test('applies explicit shares between different sampling groups', () => {
+test('automatically weights different RGB sampling groups by final noise', () => {
   const result = computeWeights([
-    { id: 'L', noise: 0.9, group: 'bin1' },
-    { id: 'R', noise: 0.5, group: 'bin2' },
-    { id: 'G', noise: 0.4, group: 'bin2' },
-  ], { bin1: 0.7, bin2: 0.3 });
-  assert.ok(Math.abs(result[0].weight - 0.7) < 1e-12);
-  assert.ok(Math.abs(result[1].weight + result[2].weight - 0.3) < 1e-12);
-  assert.ok(result[2].weight > result[1].weight);
+    { id: 'R', noise: 1, group: '1x1' },
+    { id: 'G', noise: 2, group: '2x2' },
+    { id: 'B', noise: 2, group: '3x3' },
+  ]);
+  assert.deepEqual(result.map(row => row.weight), [2/3, 1/6, 1/6]);
 });
 
-test('rejects invalid noise and incomplete shares', () => {
+test('rejects invalid noise and manual channel weights', () => {
   assert.throws(() => computeWeights([
     { id: 'L', noise: 0, group: 'bin1' },
     { id: 'R', noise: 1, group: 'bin1' },
   ]), /noise/i);
-  assert.throws(() => computeWeights([
-    { id: 'L', noise: 1, group: 'bin1' },
-    { id: 'R', noise: 1, group: 'bin2' },
-  ], { bin1: 0.7, bin2: 0.2 }), /100/i);
+  const rgb = [{ id: 'R', noise: 1, group: '1x1' },
+    { id: 'G', noise: 1, group: '2x2' }, { id: 'B', noise: 1, group: '3x3' }];
+  assert.throws(() => computeWeights(rgb, { R: 0.7, G: 0.2, B: 0 }), /100/i);
+  assert.throws(() => computeWeights(rgb, { R: 0.7, G: 0.3 }), /Kanalgewicht/i);
+  assert.throws(() => computeWeights(rgb, { R: 1.1, G: 0, B: -0.1 }), /Kanalgewicht/i);
 });
 
 test('rejects unknown channel identifiers', () => {
@@ -85,17 +84,21 @@ test('supports L plus one color and the 50/80 percent boundaries', () => {
     assert.throws(() => computeSlumMix(rows, null, value), /L-Anteil/);
 });
 
-test('uses sampling shares only within RGBLUM and preserves RGB-only weighting', () => {
+test('manual R/G/B weights override noise only inside RGBLUM', () => {
   const rgb = [{ id: 'R', noise: 1, group: '1x1' },
     { id: 'G', noise: 1, group: '2x2' },
     { id: 'B', noise: 2, group: '2x2' }];
-  const shares = { '1x1': 0.4, '2x2': 0.6 };
-  const withL = computeSlumMix([{ id: 'L', noise: 0.5, group: '1x1' }, ...rgb], shares, 0.7);
+  const manual = { R: 0.4, G: 0.35, B: 0.25 };
+  const withL = computeSlumMix([{ id: 'L', noise: 0.5, group: '1x1' }, ...rgb], manual, 0.7);
   assert.ok(Math.abs(withL.weights[0].weight - 0.7) < 1e-12);
   assert.ok(Math.abs(withL.weights[1].weight - 0.12) < 1e-12);
-  assert.ok(Math.abs(withL.weights[2].weight - 0.144) < 1e-12);
-  assert.ok(Math.abs(withL.weights[3].weight - 0.036) < 1e-12);
-  assert.throws(() => computeSlumMix([{ id: 'L', noise: 1, group: '1x1' }, ...rgb], null, 0.7), /100/);
-  assert.deepEqual(computeSlumMix(rgb, shares, null).weights,
-    computeWeights(rgb, shares));
+  assert.ok(Math.abs(withL.weights[2].weight - 0.105) < 1e-12);
+  assert.ok(Math.abs(withL.weights[3].weight - 0.075) < 1e-12);
+  assert.equal(withL.weightMode, 'manual');
+  assert.deepEqual(computeWeights(rgb, { R: 1, G: 0, B: 0 }).map(x => x.weight), [1, 0, 0]);
+  assert.deepEqual(computeSlumMix(rgb, manual, null).weights,
+    computeWeights(rgb, manual));
+  const automatic = computeSlumMix([{ id: 'L', noise: 1, group: '1x1' }, ...rgb], null, 0.7);
+  assert.equal(automatic.weightMode, 'auto');
+  assert.ok(Math.abs(automatic.weights[1].weight - 0.3 / 2.25) < 1e-12);
 });

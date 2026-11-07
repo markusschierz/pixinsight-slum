@@ -36,7 +36,7 @@ try {
    report.outTextLn("config="+JSON.stringify(dialog.config()));
    dialog.analyze("");
    report.outTextLn("sources="+dialog.session.rows.map(function(row){return row.sourceLabel}).join(";"));
-   report.outTextLn("groups="+dialog.groupNames.join(","));
+   report.outTextLn("rgbHint="+dialog.rgbHint.text);
    dialog.channels.R.viewList.currentView=alternate.mainView;
    dialog.channels.R.viewList.onViewSelected(alternate.mainView);
    report.outTextLn("afterSourceChange analyzed="+dialog.analyzed+
@@ -44,9 +44,10 @@ try {
       " sampling="+JSON.stringify(dialog.channels.R.sampling.text));
    dialog.channels.R.viewList.currentView=r.mainView;
    dialog.analyze("");
+   dialog.methodCombo.currentItem=2;
    dialog.methodCombo.onItemSelected(2);
-   report.outTextLn("oneRGBGroup="+(dialog.groupNames.length===1)+
-      " noGroupShare="+(dialog.shares()===null));
+   report.outTextLn("oneRGB="+(!dialog.rgbMode.visible)+
+      " noManualWeight="+(dialog.manualWeights()===null));
    dialog.prerequisite.checked=true;
    dialog.registration.checked=true;
    dialog.refreshSummary();
