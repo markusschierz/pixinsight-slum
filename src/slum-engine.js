@@ -308,25 +308,26 @@ SlumSession.prototype.prepare = function (progress) {
    this.prepared = true;
 };
 
-SlumSession.prototype.validateMix = function (sampling, shares) {
+SlumSession.prototype.validateMix = function (sampling, manualWeights) {
    if (this.rows.length < 2) throw new Error("Zuerst Bilder analysieren.");
    return computeSlumMix(this.rows.map(function (r) {
       return { id: r.id, group: samplingKey(sampling[r.id]), noise: 1 };
-   }), shares, this.lFraction);
+   }), manualWeights, this.lFraction);
 };
 
-SlumSession.prototype.weights = function (sampling, shares) {
+SlumSession.prototype.weights = function (sampling, manualWeights) {
    if (!this.prepared) throw new Error("Noise wird erst bei der Ausgabe gemessen.");
    var members = this.rows.map(function (r) {
       return { id: r.id, group: samplingKey(sampling[r.id]), noise: r.noise };
    });
-   this.mix = computeSlumMix(members, shares, this.lFraction);
+   this.mix = computeSlumMix(members, manualWeights, this.lFraction);
    return this.mix.weights;
 };
 
 SlumSession.prototype.captureRun = function (weights) {
    this.lastRun = { method: this.method, recommended: this.recommended, reference: this.reference,
       lFraction: this.mix.lFraction, rgbWeights: this.mix.rgbWeights,
+      weightMode: this.mix.weightMode,
       weights: weights, rows: this.rows.map(function (r) {
          return { id: r.id, sourceLabel: r.sourceLabel, median: r.median,
             noise: r.noise, countPercent: r.countPercent, layers: r.layers,
@@ -379,18 +380,18 @@ SlumSession.prototype.renderOutput = function (weights, outputId) {
    }
 };
 
-SlumSession.prototype.create = function (path, sampling, shares, registrationConfirmed, progress) {
+SlumSession.prototype.create = function (path, sampling, manualWeights, registrationConfirmed, progress) {
    progress = progress || function () {};
    this.checkReady(registrationConfirmed);
    if (!/\.xisf$/i.test(path)) throw new Error("Ausgabe muss eine .xisf-Datei sein.");
    if (File.exists(path)) throw new Error("Ausgabedatei existiert bereits.");
-   this.validateMix(sampling, shares);
+   this.validateMix(sampling, manualWeights);
    var temporaryPath = path.replace(/\.xisf$/i, ".slum-partial.xisf");
    if (File.exists(temporaryPath)) throw new Error("Temporärer Ausgabepfad ist bereits belegt.");
    var output = null;
    try {
       this.prepare(progress);
-      var weights = this.weights(sampling, shares);
+      var weights = this.weights(sampling, manualWeights);
       progress("SLUM wird berechnet");
       output = this.renderOutput(weights, uniqueSlumViewId("SLUMOutput"));
       progress("SLUM wird gespeichert");
@@ -410,15 +411,15 @@ SlumSession.prototype.create = function (path, sampling, shares, registrationCon
    }
 };
 
-SlumSession.prototype.createView = function (sampling, shares, registrationConfirmed, progress) {
+SlumSession.prototype.createView = function (sampling, manualWeights, registrationConfirmed, progress) {
    progress = progress || function () {};
    this.checkReady(registrationConfirmed);
-   this.validateMix(sampling, shares);
+   this.validateMix(sampling, manualWeights);
    var output = null;
    var completed = false;
    try {
       this.prepare(progress);
-      var weights = this.weights(sampling, shares);
+      var weights = this.weights(sampling, manualWeights);
       progress("SLUM wird berechnet");
       var outputId = "SLUM";
       var n = 1;
