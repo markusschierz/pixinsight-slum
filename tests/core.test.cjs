@@ -75,12 +75,12 @@ test('builds RGBLUM by inverse noise then assigns the chosen L fraction', () => 
   assert.ok(Math.abs(mix.weights[3].weight - 0.05) < 1e-12);
 });
 
-test('supports L plus one color and the 50/80 percent boundaries', () => {
+test('supports L plus one color and the 20/80 percent boundaries', () => {
   const rows = [{ id: 'L', noise: 1, group: '1x1' },
     { id: 'B', noise: 3, group: '2x2' }];
-  assert.deepEqual(computeSlumMix(rows, null, 0.5).weights.map(x => x.weight), [0.5, 0.5]);
+  assert.deepEqual(computeSlumMix(rows, null, 0.2).weights.map(x => x.weight), [0.2, 0.8]);
   assert.ok(Math.abs(computeSlumMix(rows, null, 0.8).weights[1].weight - 0.2) < 1e-12);
-  for (const value of [0.49, 0.81, NaN, undefined, '0.7'])
+  for (const value of [0.19, 0.81, NaN, undefined, '0.7'])
     assert.throws(() => computeSlumMix(rows, null, value), /L-Anteil/);
 });
 

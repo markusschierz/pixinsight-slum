@@ -4,7 +4,7 @@
 
 ## Objective
 
-Eine Siril-Version von SLUM erzeugt aus zwei bis vier linearen, registrierten Mastern (L, R, G, B) eine lineare Super-Luminanz. Sie verwendet dieselbe Rechenregel wie die PixInsight-Version: `SLUM = a × L + (1−a) × RGBLUM`, mit `1/noise²`-Gewichtung innerhalb RGB und einem L-Anteil von 50–80 %. Zielgruppe sind Siril-Nutzer mit LRGB-Daten, die den PixInsight-Workflow nicht nutzen.
+Eine Siril-Version von SLUM erzeugt aus zwei bis vier linearen, registrierten Mastern (L, R, G, B) eine lineare Super-Luminanz. Sie verwendet dieselbe Rechenregel wie die PixInsight-Version: `SLUM = a × L + (1−a) × RGBLUM`, mit `1/noise²`-Gewichtung innerhalb RGB und einem L-Anteil von 20–80 %. Zielgruppe sind Siril-Nutzer mit LRGB-Daten, die den PixInsight-Workflow nicht nutzen.
 
 Beide Versionen werden gemeinsam als v1.1.0 veröffentlicht (ein GitHub-Release mit zwei ZIP-Dateien).
 

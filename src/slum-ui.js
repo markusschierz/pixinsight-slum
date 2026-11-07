@@ -142,11 +142,11 @@ class SlumDialog extends Dialog {
       this.lShare = new NumericControl(this);
       this.lShare.label.text = "L-Anteil an SLUM (%)";
       this.lShare.label.minWidth = this.labelWidth;
-      this.lShare.setRange(50, 80);
+      this.lShare.setRange(20, 80);
       this.lShare.setPrecision(0);
-      this.lShare.slider.setRange(50, 80);
+      this.lShare.slider.setRange(20, 80);
       this.lShare.setValue(70);
-      this.lShare.toolTip = "50 bis 80 % echte Luminanz; der Rest stammt aus RGBLUM.";
+      this.lShare.toolTip = "20 bis 80 % echte Luminanz; der Rest stammt aus RGBLUM.";
       this.lShare.visible = false;
       this.lShare.onValueUpdated = value => {
          if (!this.suppress && !this.busy) {

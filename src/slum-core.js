@@ -70,8 +70,8 @@ function computeSlumMix(channels, manualWeights, lFraction) {
       return { weights: computeWeights(channels, manualWeights), rgbWeights: null,
          lFraction: null, weightMode: manualWeights ? "manual" : "auto" };
    if (typeof lFraction !== "number" || !isFinite(lFraction) ||
-       lFraction < 0.5 || lFraction > 0.8)
-      throw new Error("L-Anteil muss zwischen 50 und 80 % liegen.");
+       lFraction < 0.2 || lFraction > 0.8)
+      throw new Error("L-Anteil muss zwischen 20 und 80 % liegen.");
    var luminance = channels.filter(function (row) { return row.id === "L"; });
    var colors = channels.filter(function (row) { return row.id !== "L"; });
    computeWeights(luminance, null); // validate L independently of RGB sampling

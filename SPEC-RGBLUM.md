@@ -24,7 +24,7 @@ Der native PixInsight-Dialog folgt **Bilder → Analysieren → Normalisierung �
 ## Nicht-Ziele
 
 - Eine zusätzlich sichtbare oder gespeicherte RGBLUM-Ansicht/-Datei.
-- Eine aus Noise automatisch gewählte **L/RGB-Quote**, ein L-Anteil außerhalb 50–80 % oder eine behauptete optimale Auflösungsgewichtung bei gemischtem Binning.
+- Eine aus Noise automatisch gewählte **L/RGB-Quote**, ein L-Anteil außerhalb 20–80 % oder eine behauptete optimale Auflösungsgewichtung bei gemischtem Binning.
 - Änderung der SPFC-/LinearFit-Normalisierung oder Vorverlagerung der rechenintensiven Schritte in die Analyse.
 
 ## Prüfbarkeit und Risiken
