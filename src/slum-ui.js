@@ -579,7 +579,7 @@ class SlumDialog extends Dialog {
          lines.push("Referenzempfehlung: " + this.session.recommended +
             "   Gewählte Referenz: " + this.session.reference);
       if (!this.session.registrationCertain)
-         lines.push("Registriertes Ausgaberaster anhand der WCS nicht sicher prüfbar; Eingaben müssen bereits registriert sein.");
+         lines.push("Hinweis: Nicht alle Eingaben haben eine WCS-Lösung; die Registrierung kann nicht geprüft werden und muss vorab sichergestellt sein.");
       var valid = true;
       var reason = "";
       var selectedColors = this.colorIds();

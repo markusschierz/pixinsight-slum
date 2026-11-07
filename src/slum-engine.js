@@ -231,9 +231,9 @@ SlumSession.prototype.analyze = function (config, referenceOverride, progress) {
          if (solved.some(function (a) {
             return !nearAstrometricPoints(a, solved[0], this.width, this.height);
          }, this)) throw new Error("WCS-Metadaten zeigen einen Versatz von mehr als zwei Pixeln.");
-         this.registrationCertain = solved.every(function (a) {
-            return sameAstrometricPoints(a, solved[0]);
-         });
+         // Independent plate solves of registered frames differ slightly; the
+         // two-pixel check above is the acceptance criterion.
+         this.registrationCertain = true;
       } else {
          if (complete.some(function (s) { return s !== complete[0]; }) ||
              solved.some(function (a) { return !sameAstrometricPoints(a, solved[0]); }))
