@@ -4,13 +4,13 @@
 
 **Ergänzungen:** Geladene PixInsight-Hauptansichten sind als Quellen und eine SLUM-Ansicht ist als Ausgabe wählbar. Die spätere Ablaufkorrektur verschiebt LinearFit und NoiseEvaluation auf „SLUM erstellen“.
 
-**Fachliche Grundlage:** [PixInsight Super-Luminanz – Workflow und Berechnungen](docs/pixinsight_super_lum_workflow.md)
+**Fachliche Grundlage:** [PixInsight Super-Luminanz – Workflow und Berechnungen](../fachlich.md)
 
-**Freigegebene Erweiterung:** [SPFC-Flux als bevorzugte Normalisierung mit LinearFit-Fallback](SPEC-SPFC.md), geführt in [Issue #11](https://github.com/markusschierz/pixinsight-slum/issues/11). Die nachfolgende MVP-Beschreibung bleibt als Stand des ursprünglichen LinearFit-MVP erhalten; für die Erweiterung gelten die ergänzenden Verfahrens- und Referenzregeln der SPFC-Spec.
+**Freigegebene Erweiterung:** [SPFC-Flux als bevorzugte Normalisierung mit LinearFit-Fallback](spfc.md), geführt in [Issue #11](https://github.com/markusschierz/pixinsight-slum/issues/11). Die nachfolgende MVP-Beschreibung bleibt als Stand des ursprünglichen LinearFit-MVP erhalten; für die Erweiterung gelten die ergänzenden Verfahrens- und Referenzregeln der SPFC-Spec.
 
-**Aktuelle Gewichtsregel:** Die [RGBLUM-Erweiterung](SPEC-RGBLUM.md) in [Issue #13](https://github.com/markusschierz/pixinsight-slum/issues/13) ersetzt die MVP-Gewichtung in den Punkten 5 und 6: RGB wird intern automatisch nach Noise oder optional manuell gewichtet, danach gilt mit L ein wählbarer L-Anteil von 20–80 %. Ohne L gelten dieselben RGB-Gewichte direkt für SLUM.
+**Aktuelle Gewichtsregel:** Die [RGBLUM-Erweiterung](rgblum.md) in [Issue #13](https://github.com/markusschierz/pixinsight-slum/issues/13) ersetzt die MVP-Gewichtung in den Punkten 5 und 6: RGB wird intern automatisch nach Noise oder optional manuell gewichtet, danach gilt mit L ein wählbarer L-Anteil von 20–80 %. Ohne L gelten dieselben RGB-Gewichte direkt für SLUM.
 
-**Aktuelle Dialogregel:** Die spätere UI-Vereinfachung entfernt die Bestätigungs-Checkboxen für Bildvorbedingungen und unsichere WCS. Harte Geometriefehler bleiben gesperrt, unklare WCS werden im Protokoll gemeldet. Die Detailregel steht in [SPEC-RGBLUM.md](SPEC-RGBLUM.md); die ursprünglichen MVP-Abschnitte unten dokumentieren den damaligen Stand.
+**Aktuelle Dialogregel:** Die spätere UI-Vereinfachung entfernt die Bestätigungs-Checkboxen für Bildvorbedingungen und unsichere WCS. Harte Geometriefehler bleiben gesperrt, unklare WCS werden im Protokoll gemeldet. Die Detailregel steht in [rgblum.md](rgblum.md); die ursprünglichen MVP-Abschnitte unten dokumentieren den damaligen Stand.
 
 ## Capability Map
 
@@ -100,4 +100,4 @@ Erfolg bedeutet: Der Nutzer kann sowohl LRGB als auch eine Teilmenge wie RGB ohn
 - **Später ergänzt:** Jeder Kanal kann aus einer Datei oder einer bereits geöffneten PixInsight-Hauptansicht gelesen werden; Datei- und Ansichtsquellen sind in einem Lauf kombinierbar. Die vom Nutzer geöffnete Ansicht bleibt unverändert und geöffnet.
 - **Mit der Spec freigegeben:** Master mit unterschiedlichem ursprünglichem Binning sind vor dem Skriptlauf bereits auf dasselbe Bildraster registriert. Für die Mischung zwischen Sampling-Gruppen bestätigt der Nutzer explizit deren Anteile. Die Gewichtung innerhalb jeder Gruppe erfolgt weiterhin automatisch aus NoiseEvaluation. Dies vermeidet, unterschiedliche Noise-Werte direkt als vergleichbar zu behandeln und behauptet keine allgemeingültige 70/30-Regel.
 
-Die technische Umsetzung und ihre Abnahme sind im [Plan](tasks/plan.md), in der [Aufgabenliste](tasks/todo.md) und im [Abnahmeprotokoll](docs/acceptance.md) dokumentiert.
+Die technische Umsetzung ist im Code und in den Tests dokumentiert, die Abnahme im [Abnahmeprotokoll](../acceptance.md) und in den [Release-Notes](../releases/).

@@ -1,8 +1,8 @@
 # Spezifikation: SPFC-Flux als bevorzugte SLUM-Normalisierung
 
-**Status:** Fachlich freigegeben am 6. November 2026. Führendes [Feature-Issue #11](https://github.com/markusschierz/pixinsight-slum/issues/11). Ergänzt die [bestehende SLUM-Spec](SPEC.md); deren Eingabe-, Sampling-, Gewichts-, Ausgabe- und Originalschutzregeln gelten weiter. Grundlage ist die lokale Wunschliste `SLUM-withSPFC.md`.
+**Status:** Fachlich freigegeben am 6. November 2026. Führendes [Feature-Issue #11](https://github.com/markusschierz/pixinsight-slum/issues/11). Ergänzt die [bestehende SLUM-Spec](slum.md); deren Eingabe-, Sampling-, Gewichts-, Ausgabe- und Originalschutzregeln gelten weiter. Grundlage ist die lokale Wunschliste `SLUM-withSPFC.md`.
 
-**Spätere Ergänzung:** Die [RGBLUM-Spec](SPEC-RGBLUM.md) in [Issue #13](https://github.com/markusschierz/pixinsight-slum/issues/13) legt die zweistufige Gewichtung für L plus Farbkanäle fest. Die SPFC-Normalisierung bleibt bestehen.
+**Spätere Ergänzung:** Die [RGBLUM-Spec](rgblum.md) in [Issue #13](https://github.com/markusschierz/pixinsight-slum/issues/13) legt die zweistufige Gewichtung für L plus Farbkanäle fest. Die SPFC-Normalisierung bleibt bestehen.
 
 ## Zielgruppe, Problem und Ziel
 
@@ -46,6 +46,6 @@ Der Ablauf funktioniert für zwei bis vier gewählte Kanäle, gemischte Datei-/A
 
 Ein falsch verstandener Faktor könnte Pixel doppelt skalieren und damit die Noise-Gewichtung verfälschen. Metadaten einer geladenen Ansicht können zudem vom aktuellen Pixelzustand abweichen. Beide Fälle verlangen eine belastbare Gültigkeitsprüfung statt einer stillen Annahme.
 
-**Technische Konkretisierung nach Datenprüfung:** Die vier bereitgestellten SPFC-XISF besitzen gegenüber ihren FITS-Ausgangsbildern bitgleiche Stichprobenpixel. Die Version-1-`ScaleFactors` sind kanalbezogen und werden mit derselben `NormalizationFactor`-Normierung gespeichert; die einmalige Skalierung findet deshalb auf Arbeitskopien statt. Bei unabhängigen, leicht unterschiedlichen WCS-Lösungen desselben Bildrasters werden Abweichungen bis zwei Ausgabepixel im Protokoll als Unsicherheit genannt; größere Versätze sperren die Ausgabe. Die spätere UI-Vereinfachung hat die Registrierungs-Checkbox entfernt. [Nachweis und Grenzen](docs/spfc-evidence.md).
+**Technische Konkretisierung nach Datenprüfung:** Die vier bereitgestellten SPFC-XISF besitzen gegenüber ihren FITS-Ausgangsbildern bitgleiche Stichprobenpixel. Die Version-1-`ScaleFactors` sind kanalbezogen und werden mit derselben `NormalizationFactor`-Normierung gespeichert; die einmalige Skalierung findet deshalb auf Arbeitskopien statt. Bei unabhängigen, leicht unterschiedlichen WCS-Lösungen desselben Bildrasters werden Abweichungen bis zwei Ausgabepixel im Protokoll als Unsicherheit genannt; größere Versätze sperren die Ausgabe. Die spätere UI-Vereinfachung hat die Registrierungs-Checkbox entfernt. [Nachweis und Grenzen](../technik.md#spfc-nachweis).
 
-**Offene fachliche Entscheidungen:** keine. Die Referenz-Übersteuerung wurde ausdrücklich bestätigt. **Technischer Nachweis:** Akzeptanzkriterium 6 ist für PixInsight Core 1.9.6 und SPFC-Version 1 anhand der installierten PCL-Quelle und der vier bereitgestellten Bildpaare erfüllt. Die unterstützte Gültigkeitsgrenze und der Fall nachträglich veränderter Ansichten stehen im [Nachweis](docs/spfc-evidence.md).
+**Offene fachliche Entscheidungen:** keine. Die Referenz-Übersteuerung wurde ausdrücklich bestätigt. **Technischer Nachweis:** Akzeptanzkriterium 6 ist für PixInsight Core 1.9.6 und SPFC-Version 1 anhand der installierten PCL-Quelle und der vier bereitgestellten Bildpaare erfüllt. Die unterstützte Gültigkeitsgrenze und der Fall nachträglich veränderter Ansichten stehen im [Nachweis](../technik.md#spfc-nachweis).
