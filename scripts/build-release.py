@@ -21,10 +21,10 @@ CONTENTS = (
 )
 SIRIL_CONTENTS = (
     ("siril/SLUM.py", "SLUM-Siril/SLUM.py"),
-    ("siril/slum_core.py", "SLUM-Siril/slum_core.py"),
-    ("siril/slum_stats.py", "SLUM-Siril/slum_stats.py"),
-    ("siril/slum_engine.py", "SLUM-Siril/slum_engine.py"),
-    ("siril/slum_siril.py", "SLUM-Siril/slum_siril.py"),
+    ("siril/slum_core.py", "SLUM-Siril/slum_lib/slum_core.py"),
+    ("siril/slum_stats.py", "SLUM-Siril/slum_lib/slum_stats.py"),
+    ("siril/slum_engine.py", "SLUM-Siril/slum_lib/slum_engine.py"),
+    ("siril/slum_siril.py", "SLUM-Siril/slum_lib/slum_siril.py"),
     ("LICENSE", "SLUM-Siril/LICENSE"),
     ("packaging/INSTALL-Siril.txt", "SLUM-Siril/INSTALL.txt"),
 )

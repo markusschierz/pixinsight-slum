@@ -10,3 +10,5 @@ flux-samples/
 *.tmp
 *.log
 dist/
+__pycache__/
+*.pyc

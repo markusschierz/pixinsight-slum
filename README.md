@@ -8,11 +8,11 @@ Das [führende Issue #1](https://github.com/markusschierz/pixinsight-slum/issues
 
 ## Siril-Version
 
-Seit v1.1.0 gibt es zusätzlich ein Python-Skript für **Siril 1.4 oder neuer** (`SLUM-Siril-v1.1.0.zip`). Es nutzt dieselbe Gewichtsregel (`1/noise²` innerhalb RGB, L-Anteil 50–80 %), LinearFit mit wählbarer Referenz und liefert eine neue 32-Bit-FITS-Datei. Quellen sind Dateien oder das aktuell in Siril geladene Bild. Unterschiede zu PixInsight: kein SPFC-Flux, und die Rauschmessung ist eine eigene numpy-Umsetzung, die leicht von NoiseEvaluation abweicht. Installation und Bedienung stehen in [`packaging/INSTALL-Siril.txt`](packaging/INSTALL-Siril.txt), die Spezifikation in [SPEC-SIRIL.md](SPEC-SIRIL.md).
+Seit v1.1.0 gibt es zusätzlich ein Python-Skript für **Siril 1.4 oder neuer** (`SLUM-Siril-v1.1.1.zip`). Es nutzt dieselbe Gewichtsregel (`1/noise²` innerhalb RGB, L-Anteil 50–80 %), LinearFit mit wählbarer Referenz und liefert eine neue 32-Bit-FITS-Datei. Quellen sind Dateien oder das aktuell in Siril geladene Bild. Unterschiede zu PixInsight: kein SPFC-Flux, und die Rauschmessung ist eine eigene numpy-Umsetzung, die leicht von NoiseEvaluation abweicht. Installation und Bedienung stehen in [`packaging/INSTALL-Siril.txt`](packaging/INSTALL-Siril.txt), die Spezifikation in [SPEC-SIRIL.md](SPEC-SIRIL.md).
 
 ## Installation (PixInsight)
 
-Die aktuelle [GitHub-Version](https://github.com/markusschierz/pixinsight-slum/releases/latest) enthält ein installierbares ZIP mit allen Skriptdateien und einem SVG-Icon. `SLUM-v1.1.0.zip` entpacken und in PixInsight 1.9.6 oder neuer **Script → Feature Scripts…** öffnen. Dort alte SLUM-Einträge aus früheren oder temporären Ordnern entfernen, dann mit **Add** nur den entpackten Ordner `SLUM` auswählen und die Erkennung abschließen. Danach liegt das Skript mit eigenem Icon unter **Script → astro-foto.ch → SLUM**. Die Dateien im Ordner `SLUM` zusammenlassen; `SLUM.js` lädt die weiteren JavaScript-Dateien relativ zu seinem Pfad.
+Die aktuelle [GitHub-Version](https://github.com/markusschierz/pixinsight-slum/releases/latest) enthält ein installierbares ZIP mit allen Skriptdateien und einem SVG-Icon. `SLUM-v1.1.1.zip` entpacken und in PixInsight 1.9.6 oder neuer **Script → Feature Scripts…** öffnen. Dort alte SLUM-Einträge aus früheren oder temporären Ordnern entfernen, dann mit **Add** nur den entpackten Ordner `SLUM` auswählen und die Erkennung abschließen. Danach liegt das Skript mit eigenem Icon unter **Script → astro-foto.ch → SLUM**. Die Dateien im Ordner `SLUM` zusammenlassen; `SLUM.js` lädt die weiteren JavaScript-Dateien relativ zu seinem Pfad.
 
 Für die Entwicklung kann stattdessen der Ordner `src` über **Feature Scripts… → Add** eingebunden werden. Dabei den installierten SLUM-Eintrag vorher entfernen, damit nur eine Version registriert ist. Die Metadaten-Direktiven und dieser Installationsweg entsprechen der [PixInsight-PJSR-Dokumentation](https://pixinsight.com/doc/docs/PJSR/PJSR.html#lbl_metadata).
 
@@ -35,7 +35,7 @@ RGBLUM ist ein interner Rechenschritt; es entsteht nur die gewählte SLUM-Ausgab
 
 ## Entwicklungsprüfung
 
-- Release-ZIPs bauen: `python3 scripts/build-release.py v1.1.0` (optional `--target pixinsight` oder `--target siril`); die Ausgabe unter `dist/` bleibt ungetrackt. Das PixInsight-ZIP enthält nur die sieben nötigen Skript-/Icon-Dateien und `INSTALL.txt`, das Siril-ZIP die fünf Python-Module, Lizenz und Installationshinweise.
+- Release-ZIPs bauen: `python3 scripts/build-release.py v1.1.1` (optional `--target pixinsight` oder `--target siril`); die Ausgabe unter `dist/` bleibt ungetrackt. Das PixInsight-ZIP enthält nur die sieben nötigen Skript-/Icon-Dateien und `INSTALL.txt`, das Siril-ZIP `SLUM.py`, den Modulordner `slum_lib`, Lizenz und Installationshinweise.
 - Siril-Tests: `python3 -m unittest discover -s tests/siril -p "test_*.py"` (benötigt numpy). Integrationsproben in echtem Siril: `tests/siril/siril_probe.py` und `siril_ui_probe.py` über den Siril-Befehl `pyscript` starten.
 - Rechen- und Statistiktests: `node --test tests/*.test.cjs`
 - GitHub Actions führt diese Node-Tests und die Python-Tests bei Pull Requests und Pushes nach `main` aus. Die Checks `node-tests` und `python-tests` können als erforderlicher Check für `main` gesetzt werden.

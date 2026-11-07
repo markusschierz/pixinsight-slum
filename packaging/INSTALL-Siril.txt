@@ -1,14 +1,13 @@
 SLUM fuer Siril 1.4 oder neuer
 ===============================
 
-1. Das ZIP entpacken. Der Ordner SLUM-Siril muss diese Dateien zusammenbehalten:
-   SLUM.py, slum_core.py, slum_stats.py, slum_engine.py und slum_siril.py.
-2. In Siril Einstellungen > Skripte den Ordner SLUM-Siril (oder dessen
-   Elternordner) in die Skriptpfade aufnehmen und die Skriptliste aktualisieren.
-   Alternativ den Ordner in das Siril-Skriptverzeichnis kopieren
-   (Linux: ~/.local/share/siril-scripts).
-3. SLUM.py ueber das Skriptmenue starten. Siril richtet die Python-Umgebung
-   mit numpy selbst ein.
+1. Das ZIP entpacken. Aus dem Ordner SLUM-Siril die Datei SLUM.py und den
+   Unterordner slum_lib zusammen direkt in einen Siril-Skriptpfad kopieren,
+   z. B. ~/siril/scripts/ (Siril durchsucht Skriptpfade nicht rekursiv, daher
+   darf SLUM.py nicht in einem weiteren Unterordner liegen).
+2. In Siril das Skriptmenue neu einlesen (Einstellungen > Skripte > Scannen
+   oder Siril neu starten). SLUM.py erscheint unter Python Scripts.
+3. Siril richtet die Python-Umgebung mit numpy selbst ein.
 
 Bedienung: Je Kanal L, R, G, B eine Datei oder das aktuell geladene Siril-Bild
 waehlen (mindestens zwei Kanaele), Sampling pruefen, Analysieren, dann SLUM
