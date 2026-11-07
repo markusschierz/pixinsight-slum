@@ -7,7 +7,7 @@ Fachliche Grundlage von SLUM: Regeln, Formeln und Sonderfälle, die vor der Impl
 > **Heutiger Stand im Überblick:**
 > - Gewichtung `1/noise²` gilt innerhalb von R/G/B. Mit L entsteht `SLUM = a × L + (1−a) × RGBLUM`; `a` ist zwischen 20 und 80 % wählbar, Standard 70 % ([RGBLUM-Spec](specs/rgblum.md)). Die direkte LRGB-Gewichtung aus Abschnitt 1 und 2 bleibt Herleitung und Rechenbeispiel.
 > - SPFC-Flux wird bevorzugt als Normalisierung verwendet, LinearFit ist der Rückfall ([SPFC-Spec](specs/spfc.md)).
-> - Optional gibt es eine Korrektur gesättigter Sternränder ([Spec](specs/saturation.md)).
+> - Optional gibt es eine Korrektur gesättigter Sternränder ([ADR 001](decisions/001-sternrand-korrektur.md)).
 > - Das Siril-Skript verwendet dieselben Regeln ([Spec](specs/siril.md)).
 
 ## Ziel
