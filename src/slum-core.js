@@ -88,36 +88,6 @@ function computeSlumMix(channels, manualWeights, lFraction) {
       lFraction: lFraction, weightMode: manualWeights ? "manual" : "auto" };
 }
 
-// Builds the PixelMath mix. A channel with a clipped plateau (clip > 0) fades out
-// towards its clip level, so saturated star cores do not take part in the mix and
-// the remaining weights are renormalised per pixel. Without clipping the result is
-// the plain weighted sum.
-var CLIP_FADE_START = 0.9;
-var CLIP_WEIGHT_FLOOR = 1e-6;
-
-function buildSlumExpression(terms) {
-   if (!terms || !terms.length) throw new Error("Keine Terme für die Mischung.");
-   var anyClip = terms.some(function (t) { return t.clip > 0; });
-   var parts = [];
-   var weights = [];
-   for (var i = 0; i < terms.length; ++i) {
-      var t = terms[i];
-      var w = t.weight.toPrecision(17);
-      if (!(t.clip > 0)) {
-         parts.push("(" + w + "*" + t.viewId + ")");
-         weights.push(w);
-         continue;
-      }
-      var fade = "min(1,max(0,(" + t.viewId + "/" + t.clip.toPrecision(17) + "-" +
-         CLIP_FADE_START + ")/" + (1 - CLIP_FADE_START) + "))";
-      var adaptive = "(" + w + "*((1-" + fade + ")+" + CLIP_WEIGHT_FLOOR + "))";
-      parts.push("(" + adaptive + "*" + t.viewId + ")");
-      weights.push(adaptive);
-   }
-   if (!anyClip) return parts.join("+");
-   return "(" + parts.join("+") + ")/(" + weights.join("+") + ")";
-}
-
 if (typeof module !== "undefined" && module.exports)
    module.exports = { chooseReference: chooseReference, computeWeights: computeWeights,
-      computeSlumMix: computeSlumMix, buildSlumExpression: buildSlumExpression };
+      computeSlumMix: computeSlumMix };

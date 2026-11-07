@@ -304,7 +304,6 @@ SlumSession.prototype.prepare = function (progress) {
       target.noise = estimate.noise;
       target.countPercent = estimate.countPercent;
       target.layers = estimate.layers;
-      target.clipLevel = detectClipLevel(target.view.image);
    }
    this.prepared = true;
 };
@@ -332,7 +331,6 @@ SlumSession.prototype.captureRun = function (weights) {
       weights: weights, rows: this.rows.map(function (r) {
          return { id: r.id, sourceLabel: r.sourceLabel, median: r.median,
             noise: r.noise, countPercent: r.countPercent, layers: r.layers,
-            clipLevel: r.clipLevel,
             spfc: r.spfc };
       }) };
 };
@@ -342,10 +340,19 @@ SlumSession.prototype.checkReady = function () {
 };
 
 SlumSession.prototype.renderOutput = function (weights, outputId) {
-   var expression = buildSlumExpression(weights.map(function (row) {
+   var term = function (row) {
       var source = this.rows.filter(function (r) { return r.id === row.id; })[0];
-      return { viewId: source.view.id, weight: row.weight, clip: source.clipLevel || 0 };
-   }, this));
+      return "(" + row.weight.toPrecision(17) + "*" + source.view.id + ")";
+   };
+   var expression;
+   if (this.mix && this.mix.lFraction !== null) {
+      var luminance = this.rows.filter(function (row) { return row.id === "L"; })[0];
+      var rgbExpression = this.mix.rgbWeights.map(term, this).join("+");
+      expression = "(" + this.mix.lFraction.toPrecision(17) + "*" + luminance.view.id +
+         ")+(" + (1 - this.mix.lFraction).toPrecision(17) + "*(" + rgbExpression + "))";
+   } else {
+      expression = weights.map(term, this).join("+");
+   }
    var output = null;
    try {
       var p = new PixelMath;

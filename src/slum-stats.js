@@ -75,19 +75,6 @@ function estimateNoise(image) {
    return { noise: noise, countPercent: 100 * result[1] / area, layers: layers };
 }
 
-// Returns the clip level (image maximum) when the image has a saturated plateau,
-// otherwise 0. A plateau means several pixels sit at the maximum.
-function detectClipLevel(image) {
-   var max = image.maximum();
-   if (!isFinite(max) || max <= 0) return 0;
-   var stats = new ImageStatistics;
-   stats.rangeClippingEnabled = true;
-   stats.rangeLow = 0.999 * max;
-   stats.rangeHigh = 1.001 * max;
-   stats.generate(image);
-   return stats.count >= 8 ? max : 0;
-}
-
 function countWarning(percent) {
    if (!isFinite(percent) || percent < 0 || percent > 100)
       throw new Error("Ungültiger count-Prozentwert.");
@@ -98,4 +85,4 @@ function countWarning(percent) {
 
 if (typeof module !== "undefined" && module.exports)
    module.exports = { nativeCommonMedians: nativeCommonMedians,
-      estimateNoise: estimateNoise, detectClipLevel: detectClipLevel, countWarning: countWarning };
+      estimateNoise: estimateNoise, countWarning: countWarning };
