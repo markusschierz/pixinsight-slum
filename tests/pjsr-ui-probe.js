@@ -35,12 +35,8 @@ try {
    dialog.methodCombo.currentItem=2;
    dialog.methodCombo.onItemSelected(2);
    report.outTextLn("reference=" + dialog.session.reference + " mode=" + dialog.rgbMode.currentItem);
-   report.outTextLn("withoutConfirmationsEnabled=" + dialog.saveButton.enabled);
-   dialog.refreshSummary();
-   dialog.prerequisite.checked = true;
-   dialog.refreshSummary();
-   report.outTextLn("withoutRasterConfirmationEnabled=" + dialog.saveButton.enabled);
-   dialog.registration.checked = true;
+   report.outTextLn("noConfirmationControls="+
+      (dialog.prerequisite===undefined && dialog.registration===undefined));
    dialog.refreshSummary();
    report.outTextLn("saveEnabled=" + dialog.saveButton.enabled);
    let analyzedRows = dialog.session.rows;

@@ -51,7 +51,7 @@ test('detects a different astrometric raster and handles RA wraparound', () => {
   assert.equal(sameAstrometricPoints(points, [[359.99999999, 1], [10, 2.1], [20, 3]]), false);
 });
 
-test('requires confirmation for small plate-solve differences but rejects large shifts', () => {
+test('accepts small plate-solve differences but rejects large shifts', () => {
   const a = [[180.78, -18.68], [180.52, -18.87], [180.17, -19.07]];
   const near = a.map(([ra, dec]) => [ra + 0.00002, dec - 0.00002]);
   const far = a.map(([ra, dec]) => [ra + 0.01, dec]);
