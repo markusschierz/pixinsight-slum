@@ -129,3 +129,9 @@ Die spätere Nutzerergänzung erweitert die Ausgabe innerhalb des führenden Iss
 - [x] **4 – Abschluss:** Datei-/Ansichtsmodi, Fehler/Cleanup, Originalschutz, Tests und Dokumentation prüfen; PR mit CI. **Betroffen:** README, Abnahme, Tests. **Abhängigkeit:** 3.
 
 - [x] **UI-Nachschärfung (Issue #15):** RGB-Gruppen per Slider mit automatisch berechnetem Rest verteilen, Kanal-/Sampling-Zuordnung und SLUM-Wirkung erläutern, L 2×2/RGB 3×3 sowie drei Farbgruppen nativ prüfen. **Betroffen:** Dialog, Proben, Dokumentation.
+
+## Automatische RGB-Gewichtung und UI-Audit – führendes Issue #13
+
+- [x] **A – Gewichtsvertrag:** Auto auf endgültigen Noise-Werten und manuelle RGBLUM-Kanalgewichte samt Validierung/Tests zentralisieren; Sampling bleibt erforderlich. **Abhängigkeit:** keine.
+- [x] **B – Dialoggewichtung:** Gruppen-Slider durch Auto/Manuell und nebeneinanderliegende R/G/B-Werte mit berechnetem Rest ersetzen; Umschalten bleibt ohne neue Analyse. **Abhängigkeit:** A.
+- [x] **C – UI-Abschluss:** Gesamten Dialogfluss, Sperrgründe, Quellensteuerung und Ergebnissicht nach Audit schärfen; Native-Proben, Dokumentation und CI abschließen. **Abhängigkeit:** B.
