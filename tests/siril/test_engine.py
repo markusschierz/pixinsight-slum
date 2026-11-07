@@ -74,5 +74,54 @@ class Engine(unittest.TestCase):
             session.analyze()
 
 
+def saturated_session(l_clipped=True):
+    size = 160
+    yy, xx = np.mgrid[0:size, 0:size]
+    r2 = (xx - 80) ** 2 + (yy - 80) ** 2
+    star = np.exp(-r2 / 40.0)
+    session = SlumSession()
+    for i, (id, gain, clip) in enumerate([("L", 3.0, 1.0), ("R", 1.0, 1.0), ("G", 1.0, 1.0),
+                                          ("B", 1.0, 1.0)]):
+        rng = np.random.default_rng(i)
+        data = 0.05 + gain * 0.5 * star + rng.normal(0, 0.002, star.shape)
+        top = clip if (id != "L" or l_clipped) else 0.9
+        session.add_channel(id, id + ".fit", np.clip(data, 1e-4, top).astype(np.float32))
+    session.analyze()
+    session.prepare()
+    return session
+
+
+SAMPLING = {i: "1" for i in "LRGB"}
+
+
+class SaturationCorrection(unittest.TestCase):
+    def test_off_is_identical_to_plain_mix(self):
+        session = saturated_session()
+        mix = session.mix(SAMPLING, None, 0.66)
+        plain = session.render(mix)
+        self.assertTrue(np.array_equal(plain, session.render(mix, saturation=False)))
+
+    def test_on_changes_only_the_zone_and_stays_between_plain_mix_and_30_percent_mix(self):
+        session = saturated_session()
+        mix = session.mix(SAMPLING, None, 0.66)
+        off, on = session.render(mix), session.render(mix, saturation=True)
+        self.assertTrue(session.saturation_applied)
+        self.assertEqual(session.saturated_channels(), ["L"])
+        self.assertTrue(np.array_equal(off[:20, :20], on[:20, :20]))
+        self.assertFalse(np.array_equal(off, on))
+        self.assertTrue(np.array_equal(off[:, :40], on[:, :40]))
+        by_id = {r["id"]: r["fitted"] for r in session.rows}
+        rgb = sum(np.float32(w["weight"]) * by_id[w["id"]] for w in mix["rgbWeights"])
+        floor = np.float32(0.3) * by_id["L"] + np.float32(0.7) * rgb
+        low, high = np.minimum(off, floor), np.maximum(off, floor)
+        self.assertTrue(((on >= low - 1e-5) & (on <= high + 1e-5)).all())
+
+    def test_unsaturated_l_is_not_touched(self):
+        session = saturated_session(l_clipped=False)
+        mix = session.mix(SAMPLING, None, 0.66)
+        self.assertTrue(np.array_equal(session.render(mix), session.render(mix, saturation=True)))
+        self.assertFalse(session.saturation_applied)
+
+
 if __name__ == "__main__":
     unittest.main()

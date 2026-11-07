@@ -126,6 +126,7 @@ function SlumSession() {
    this.method = "";
    this.spfcAvailable = false;
    this.lFraction = 0.7;
+   this.saturationFix = false;
    this.mix = null;
    this.lastRun = null;
 }
@@ -278,6 +279,16 @@ SlumSession.prototype.setLuminanceFraction = function (value) {
    this.lFraction = value;
 };
 
+SlumSession.prototype.setSaturationCorrection = function (enabled) {
+   if (this.prepared) throw new Error("Nach der Normalisierung bitte erneut analysieren.");
+   this.saturationFix = enabled === true;
+};
+
+SlumSession.prototype.saturatedChannels = function () {
+   return this.rows.filter(function (r) { return r.saturated; })
+      .map(function (r) { return r.id; });
+};
+
 SlumSession.prototype.prepare = function (progress) {
    if (this.prepared) return;
    progress = progress || function () {};
@@ -286,6 +297,7 @@ SlumSession.prototype.prepare = function (progress) {
    var reference = this.rows.filter(function (r) { return r.id === this.reference; }, this)[0];
    for (var k = 0; k < this.rows.length; ++k) {
       var target = this.rows[k];
+      target.saturated = target.view.image.maximum() >= 0.999;
       if (this.method === "spfc") {
          progress("SPFC-Flux " + target.id + " wird skaliert");
          target.view.beginProcess(UndoFlag.NoSwapFile);
@@ -299,6 +311,7 @@ SlumSession.prototype.prepare = function (progress) {
          fit.rejectHigh = 0.92;
          if (!fit.executeOn(target.view)) throw new Error(target.id + ": LinearFit fehlgeschlagen.");
       }
+      target.clipLevel = target.view.image.maximum();
       progress("Noise " + target.id + " wird gemessen");
       var estimate = estimateNoise(target.view.image);
       target.noise = estimate.noise;
@@ -327,6 +340,8 @@ SlumSession.prototype.weights = function (sampling, manualWeights) {
 SlumSession.prototype.captureRun = function (weights) {
    this.lastRun = { method: this.method, recommended: this.recommended, reference: this.reference,
       lFraction: this.mix.lFraction, rgbWeights: this.mix.rgbWeights,
+      saturation: { enabled: this.saturationFix, applied: this.saturationApplied === true,
+         channels: this.saturatedChannels() },
       weightMode: this.mix.weightMode,
       weights: weights, rows: this.rows.map(function (r) {
          return { id: r.id, sourceLabel: r.sourceLabel, median: r.median,
@@ -345,14 +360,59 @@ SlumSession.prototype.renderOutput = function (weights, outputId) {
       return "(" + row.weight.toPrecision(17) + "*" + source.view.id + ")";
    };
    var expression;
-   if (this.mix && this.mix.lFraction !== null) {
-      var luminance = this.rows.filter(function (row) { return row.id === "L"; })[0];
-      var rgbExpression = this.mix.rgbWeights.map(term, this).join("+");
-      expression = "(" + this.mix.lFraction.toPrecision(17) + "*" + luminance.view.id +
-         ")+(" + (1 - this.mix.lFraction).toPrecision(17) + "*(" + rgbExpression + "))";
-   } else {
-      expression = weights.map(term, this).join("+");
+   var zone = null;
+   this.saturationApplied = false;
+   try {
+      if (this.mix && this.mix.lFraction !== null) {
+         var luminance = this.rows.filter(function (row) { return row.id === "L"; })[0];
+         var rgbExpression = this.mix.rgbWeights.map(term, this).join("+");
+         if (this.saturationFix && luminance.saturated) {
+            zone = this.createSaturationZone(luminance);
+            this.saturationApplied = true;
+         }
+         expression = mixExpression(this.mix.lFraction, luminance.view.id, rgbExpression,
+            zone ? zone.mainView.id : null);
+      } else {
+         expression = weights.map(term, this).join("+");
+      }
+      return this.renderExpression(expression, outputId);
+   } finally {
+      closeWindow(zone);
    }
+};
+
+SlumSession.prototype.createSaturationZone = function (luminance) {
+   var zoneId = uniqueSlumViewId("SLUMZone");
+   var p = new PixelMath;
+   p.expression = "iif(" + luminance.view.id + ">=" + (0.98 * luminance.clipLevel).toPrecision(17) +
+      ",1,0)";
+   p.useSingleExpression = true;
+   p.generateOutput = true;
+   p.createNewImage = true;
+   p.showNewImage = false;
+   p.rescale = false;
+   p.truncate = false;
+   p.newImageId = zoneId;
+   p.newImageColorSpace = PixelMath.Gray;
+   p.newImageSampleFormat = PixelMath.f32;
+   if (!p.executeOn(this.rows[0].view)) throw new Error("Sättigungszone konnte nicht berechnet werden.");
+   var zone = View.viewById(zoneId).window;
+   try {
+      var c = new Convolution;
+      c.mode = Convolution.Parametric;
+      c.sigma = SATURATION_SIGMA;
+      c.shape = 2;
+      c.aspectRatio = 1;
+      c.rotationAngle = 0;
+      if (!c.executeOn(zone.mainView)) throw new Error("Sättigungszone konnte nicht geglättet werden.");
+      return zone;
+   } catch (error) {
+      closeWindow(zone);
+      throw error;
+   }
+};
+
+SlumSession.prototype.renderExpression = function (expression, outputId) {
    var output = null;
    try {
       var p = new PixelMath;
