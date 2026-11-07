@@ -102,3 +102,25 @@ test('manual R/G/B weights override noise only inside RGBLUM', () => {
   assert.equal(automatic.weightMode, 'auto');
   assert.ok(Math.abs(automatic.weights[1].weight - 0.3 / 2.25) < 1e-12);
 });
+
+const { mixExpression, SATURATION_TARGET } = require('../src/slum-core.js');
+
+test('mix expression without correction keeps the plain L/RGB blend', () => {
+  assert.equal(mixExpression(0.66, 'Lum', '(0.5*R)+(0.5*G)', null),
+    '(0.66000000000000003*Lum)+(0.33999999999999997*((0.5*R)+(0.5*G)))');
+});
+
+test('saturation correction lowers the L share only through the zone image', () => {
+  const e = mixExpression(0.66, 'Lum', '(1*R)', 'Zone');
+  const d = (0.66 - SATURATION_TARGET).toPrecision(17);
+  assert.ok(e.includes('Zone'));
+  assert.ok(e.includes(d));
+  assert.equal(e.replace(/Zone/g, 'Z').includes('min(1,'), true);
+});
+
+test('saturation correction is a no-op when L share is already at or below the target', () => {
+  assert.equal(mixExpression(0.2, 'Lum', '(1*R)', 'Zone'),
+    mixExpression(0.2, 'Lum', '(1*R)', null));
+  assert.equal(mixExpression(SATURATION_TARGET, 'Lum', '(1*R)', 'Zone'),
+    mixExpression(SATURATION_TARGET, 'Lum', '(1*R)', null));
+});
