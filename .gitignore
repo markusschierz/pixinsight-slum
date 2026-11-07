@@ -8,3 +8,4 @@ sample-data/
 # Temporäre lokale Dateien.
 *.tmp
 *.log
+dist/
