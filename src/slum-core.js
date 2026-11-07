@@ -70,8 +70,8 @@ function computeSlumMix(channels, manualWeights, lFraction) {
       return { weights: computeWeights(channels, manualWeights), rgbWeights: null,
          lFraction: null, weightMode: manualWeights ? "manual" : "auto" };
    if (typeof lFraction !== "number" || !isFinite(lFraction) ||
-       lFraction < 0.5 || lFraction > 0.8)
-      throw new Error("L-Anteil muss zwischen 50 und 80 % liegen.");
+       lFraction < 0.2 || lFraction > 0.8)
+      throw new Error("L-Anteil muss zwischen 20 und 80 % liegen.");
    var luminance = channels.filter(function (row) { return row.id === "L"; });
    var colors = channels.filter(function (row) { return row.id !== "L"; });
    computeWeights(luminance, null); // validate L independently of RGB sampling
@@ -88,6 +88,23 @@ function computeSlumMix(channels, manualWeights, lFraction) {
       lFraction: lFraction, weightMode: manualWeights ? "manual" : "auto" };
 }
 
+// Sternrand-Korrektur: Zielanteil von L, Breite (Sigma, px) und Verstärkung der Zonenmaske.
+var SATURATION_TARGET = 0.3;
+var SATURATION_SIGMA = 6;
+var SATURATION_GAIN = 4;
+
+function mixExpression(lFraction, lumId, rgbExpression, zoneId) {
+   var drop = lFraction - SATURATION_TARGET;
+   if (!zoneId || drop <= 0)
+      return "(" + lFraction.toPrecision(17) + "*" + lumId + ")+(" +
+         (1 - lFraction).toPrecision(17) + "*(" + rgbExpression + "))";
+   var cut = drop.toPrecision(17) + "*min(1," + SATURATION_GAIN + "*" + zoneId + ")";
+   return "((" + lFraction.toPrecision(17) + "-" + cut + ")*" + lumId + ")+((" +
+      (1 - lFraction).toPrecision(17) + "+" + cut + ")*(" + rgbExpression + "))";
+}
+
 if (typeof module !== "undefined" && module.exports)
    module.exports = { chooseReference: chooseReference, computeWeights: computeWeights,
-      computeSlumMix: computeSlumMix };
+      computeSlumMix: computeSlumMix, mixExpression: mixExpression,
+      SATURATION_TARGET: SATURATION_TARGET, SATURATION_SIGMA: SATURATION_SIGMA,
+      SATURATION_GAIN: SATURATION_GAIN };

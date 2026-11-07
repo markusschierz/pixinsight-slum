@@ -142,11 +142,11 @@ class SlumDialog extends Dialog {
       this.lShare = new NumericControl(this);
       this.lShare.label.text = "L-Anteil an SLUM (%)";
       this.lShare.label.minWidth = this.labelWidth;
-      this.lShare.setRange(50, 80);
+      this.lShare.setRange(20, 80);
       this.lShare.setPrecision(0);
-      this.lShare.slider.setRange(50, 80);
+      this.lShare.slider.setRange(20, 80);
       this.lShare.setValue(70);
-      this.lShare.toolTip = "50 bis 80 % echte Luminanz; der Rest stammt aus RGBLUM.";
+      this.lShare.toolTip = "20 bis 80 % echte Luminanz; der Rest stammt aus RGBLUM.";
       this.lShare.visible = false;
       this.lShare.onValueUpdated = value => {
          if (!this.suppress && !this.busy) {
@@ -155,6 +155,21 @@ class SlumDialog extends Dialog {
          }
       };
       mix.add(this.lShare);
+      this.saturationBox = new CheckBox(this);
+      this.saturationBox.text = "Gesättigte Sternränder korrigieren";
+      this.saturationBox.checked = false;
+      this.saturationBox.toolTip = "Senkt den L-Anteil nur in und um Pixel, in denen L gesättigt ist " +
+         "(Sternkerne), auf " + Math.round(100 * SATURATION_TARGET) + " %. Aus = bisheriges Ergebnis.";
+      this.saturationBox.visible = false;
+      this.saturationBox.onClick = checked => {
+         if (!this.suppress && !this.busy) this.session.setSaturationCorrection(checked);
+      };
+      var saturationRow = new HorizontalSizer;
+      saturationRow.addUnscaledSpacing(this.labelWidth + 6);
+      saturationRow.add(this.saturationBox);
+      saturationRow.addStretch();
+      this.saturationRow = saturationRow;
+      mix.add(saturationRow);
       var weightModeRow = new HorizontalSizer;
       weightModeRow.spacing = 6;
       this.rgbWeightLabel = new Label(this);
@@ -370,6 +385,7 @@ class SlumDialog extends Dialog {
       for (var id of ["R", "G", "B"])
          this.manualFields[id].edit.enabled = enabled && this.analyzed;
       this.lShare.enabled = enabled && this.analyzed;
+      this.saturationBox.enabled = enabled && this.analyzed;
    }
 
    outputModeChanged() {
@@ -401,6 +417,7 @@ class SlumDialog extends Dialog {
       this.session.close();
       this.analyzed = false;
       this.lShare.visible = false;
+      this.saturationBox.visible = false;
       this.hideWeightControls();
       this.methodCombo.enabled = false;
       this.referenceCombo.enabled = false;
@@ -456,6 +473,7 @@ class SlumDialog extends Dialog {
          this.suppress = false;
          this.analyzed = false;
          this.lShare.visible = false;
+      this.saturationBox.visible = false;
          this.hideWeightControls();
          this.methodCombo.enabled = false;
          this.referenceCombo.enabled = false;
@@ -503,6 +521,7 @@ class SlumDialog extends Dialog {
       var hasL = this.session.rows.some(function (row) { return row.id === "L"; });
       var manual = this.rgbMode.currentItem === 1 && colors.length > 1;
       this.lShare.visible = hasL;
+      this.saturationBox.visible = hasL;
       this.rgbWeightLabel.visible = colors.length > 1;
       this.rgbMode.visible = colors.length > 1;
       this.rgbMode.toolTip = manual ?
@@ -579,7 +598,7 @@ class SlumDialog extends Dialog {
          lines.push("Referenzempfehlung: " + this.session.recommended +
             "   Gewählte Referenz: " + this.session.reference);
       if (!this.session.registrationCertain)
-         lines.push("Registriertes Ausgaberaster anhand der WCS nicht sicher prüfbar; Eingaben müssen bereits registriert sein.");
+         lines.push("Hinweis: Nicht alle Eingaben haben eine WCS-Lösung; die Registrierung kann nicht geprüft werden und muss vorab sichergestellt sein.");
       var valid = true;
       var reason = "";
       var selectedColors = this.colorIds();
@@ -648,6 +667,12 @@ class SlumDialog extends Dialog {
          }).join("   "));
          lines.push("SLUM = " + (100 * run.lFraction).toFixed(0) + "% L + " +
             (100 * (1 - run.lFraction)).toFixed(0) + "% RGBLUM");
+         lines.push("Sättigung erkannt: " +
+            (run.saturation.channels.length ? run.saturation.channels.join(", ") : "keine"));
+         lines.push("Sternrand-Korrektur: " + (!run.saturation.enabled ? "aus" :
+            run.saturation.applied ? "ein (L-Anteil an gesättigten Sternen " +
+               Math.round(100 * SATURATION_TARGET) + " %)" :
+            "ein, aber L ist nicht gesättigt (keine Änderung)"));
       }
       lines.push("Endgewichte: " + run.weights.map(function(w) {
          return w.id + " " + (100 * w.weight).toFixed(3) + "%";

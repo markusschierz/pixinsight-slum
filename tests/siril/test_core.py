@@ -54,9 +54,9 @@ class CoreParity(unittest.TestCase):
 
     def test_l_plus_one_color_and_bounds(self):
         rows = [ch("L", 1), ch("B", 3, "2x2")]
-        self.assertEqual([x["weight"] for x in compute_slum_mix(rows, None, 0.5)["weights"]],
-                         [0.5, 0.5])
-        for value in (0.49, 0.81, math.nan, None, "0.7"):
+        self.assertEqual([x["weight"] for x in compute_slum_mix(rows, None, 0.2)["weights"]],
+                         [0.2, 0.8])
+        for value in (0.19, 0.81, math.nan, None, "0.7"):
             with self.assertRaisesRegex(ValueError, "L-Anteil"):
                 compute_slum_mix(rows, None, value)
 

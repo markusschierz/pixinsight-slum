@@ -75,12 +75,12 @@ test('builds RGBLUM by inverse noise then assigns the chosen L fraction', () => 
   assert.ok(Math.abs(mix.weights[3].weight - 0.05) < 1e-12);
 });
 
-test('supports L plus one color and the 50/80 percent boundaries', () => {
+test('supports L plus one color and the 20/80 percent boundaries', () => {
   const rows = [{ id: 'L', noise: 1, group: '1x1' },
     { id: 'B', noise: 3, group: '2x2' }];
-  assert.deepEqual(computeSlumMix(rows, null, 0.5).weights.map(x => x.weight), [0.5, 0.5]);
+  assert.deepEqual(computeSlumMix(rows, null, 0.2).weights.map(x => x.weight), [0.2, 0.8]);
   assert.ok(Math.abs(computeSlumMix(rows, null, 0.8).weights[1].weight - 0.2) < 1e-12);
-  for (const value of [0.49, 0.81, NaN, undefined, '0.7'])
+  for (const value of [0.19, 0.81, NaN, undefined, '0.7'])
     assert.throws(() => computeSlumMix(rows, null, value), /L-Anteil/);
 });
 
@@ -101,4 +101,26 @@ test('manual R/G/B weights override noise only inside RGBLUM', () => {
   const automatic = computeSlumMix([{ id: 'L', noise: 1, group: '1x1' }, ...rgb], null, 0.7);
   assert.equal(automatic.weightMode, 'auto');
   assert.ok(Math.abs(automatic.weights[1].weight - 0.3 / 2.25) < 1e-12);
+});
+
+const { mixExpression, SATURATION_TARGET } = require('../src/slum-core.js');
+
+test('mix expression without correction keeps the plain L/RGB blend', () => {
+  assert.equal(mixExpression(0.66, 'Lum', '(0.5*R)+(0.5*G)', null),
+    '(0.66000000000000003*Lum)+(0.33999999999999997*((0.5*R)+(0.5*G)))');
+});
+
+test('saturation correction lowers the L share only through the zone image', () => {
+  const e = mixExpression(0.66, 'Lum', '(1*R)', 'Zone');
+  const d = (0.66 - SATURATION_TARGET).toPrecision(17);
+  assert.ok(e.includes('Zone'));
+  assert.ok(e.includes(d));
+  assert.equal(e.replace(/Zone/g, 'Z').includes('min(1,'), true);
+});
+
+test('saturation correction is a no-op when L share is already at or below the target', () => {
+  assert.equal(mixExpression(0.2, 'Lum', '(1*R)', 'Zone'),
+    mixExpression(0.2, 'Lum', '(1*R)', null));
+  assert.equal(mixExpression(SATURATION_TARGET, 'Lum', '(1*R)', 'Zone'),
+    mixExpression(SATURATION_TARGET, 'Lum', '(1*R)', null));
 });

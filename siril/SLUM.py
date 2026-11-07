@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MIT
 # SLUM für Siril: lineare Super-Luminanz aus 2-4 registrierten L-, R-, G-, B-Mastern.
-# Version 1.2.0
+# Version 1.2.1
 #
 # Aufruf in Siril: Scripts > SLUM.py (SLUM.py direkt im Skriptpfad, die Module im Unterordner slum_lib).
 # Die Master müssen linear, registriert, gleich beschnitten und gradientenkorrigiert sein.
@@ -43,6 +43,7 @@ class SlumApp:
         self.manual = {i: tk.StringVar() for i in "RGB"}
         self.output = tk.StringVar(value=unique_path(siril.get_siril_wd()))
         self.open_result = tk.BooleanVar(value=True)
+        self.saturation = tk.BooleanVar(value=False)
         root.title("SLUM - Super-Luminanz")
         self.build()
 
@@ -80,10 +81,12 @@ class SlumApp:
         self.reference_box = ttk.Combobox(options, textvariable=self.reference, width=5, state="disabled")
         self.reference_box.grid(row=0, column=1, sticky="w", padx=pad)
         ttk.Label(options, text="L-Anteil").grid(row=1, column=0, sticky="w", pady=2)
-        ttk.Scale(options, from_=50, to=80, variable=self.l_percent, command=self.update_l_label).grid(
+        ttk.Scale(options, from_=20, to=80, variable=self.l_percent, command=self.update_l_label).grid(
             row=1, column=1, sticky="ew", padx=pad)
         self.l_label = ttk.Label(options, text="70 %", width=6, anchor="e")
         self.l_label.grid(row=1, column=2)
+        ttk.Checkbutton(options, text="Gesättigte Sternränder korrigieren (nur mit L)",
+                        variable=self.saturation).grid(row=4, column=1, columnspan=2, sticky="w", padx=pad)
         ttk.Label(options, text="RGB-Gewichtung").grid(row=2, column=0, sticky="w", pady=2)
         modes = ttk.Frame(options)
         modes.grid(row=2, column=1, columnspan=2, sticky="w", padx=pad)
@@ -198,7 +201,7 @@ class SlumApp:
             session.select_reference(self.reference.get())
             session.prepare(self.set_info)
             mix = session.mix(sampling, manual, l_fraction)
-            result = session.render(mix)
+            result = session.render(mix, saturation=self.saturation.get())
             save_result(self.siril, result, session.channels[session.reference]["header"],
                         self.output.get().strip(), self.open_result.get())
             self.set_info(session.protocol(mix, sampling) + f"\nGespeichert: {self.output.get()}")

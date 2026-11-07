@@ -4,7 +4,8 @@ import re
 
 import numpy as np
 
-from slum_core import choose_reference, compute_slum_mix
+from slum_core import (SATURATION_GAIN, SATURATION_SIGMA, SATURATION_TARGET, choose_reference,
+                       compute_slum_mix)
 from slum_stats import common_medians, count_warning, estimate_noise, linear_fit
 
 CHANNEL_IDS = ("L", "R", "G", "B")
@@ -41,6 +42,26 @@ def binning_from_header(header):
     return None
 
 
+def gaussian_blur(array, sigma):
+    """Getrennte Gauß-Glättung ohne SciPy; Ränder werden gespiegelt."""
+    radius = int(np.ceil(4 * sigma))
+    taps = np.exp(-0.5 * (np.arange(-radius, radius + 1) / sigma) ** 2)
+    taps = (taps / taps.sum()).astype(np.float32)
+    result = np.asarray(array, dtype=np.float32)
+    for axis in (0, 1):
+        pad = [(0, 0), (0, 0)]
+        pad[axis] = (radius, radius)
+        padded = np.pad(result, pad, mode="symmetric")
+        length = result.shape[axis]
+        total = np.zeros_like(result)
+        for k, weight in enumerate(taps):
+            window = [slice(None), slice(None)]
+            window[axis] = slice(k, k + length)
+            total += weight * padded[tuple(window)]
+        result = total
+    return result
+
+
 class SlumSession:
     def __init__(self):
         self.channels = {}
@@ -48,6 +69,7 @@ class SlumSession:
         self.recommended = None
         self.prepared = False
         self.rows = []
+        self.saturation_applied = False
 
     def add_channel(self, id, label, data, header=None):
         if id not in CHANNEL_IDS:
@@ -87,6 +109,7 @@ class SlumSession:
         reference = self.channels[self.reference]["data"]
         for row in self.rows:
             source = self.channels[row["id"]]["data"]
+            row["saturated"] = bool(source.max() >= 0.999)
             if row["id"] == self.reference:
                 row["fitted"], row["slope"], row["offset"] = source, 1.0, 0.0
             else:
@@ -104,14 +127,39 @@ class SlumSession:
                    for r in self.rows]
         return compute_slum_mix(members, manual_weights, l_fraction)
 
-    def render(self, mix):
+    def saturated_channels(self):
+        return [r["id"] for r in self.rows if r.get("saturated")]
+
+    def render(self, mix, saturation=False):
         if not self.prepared:
             raise ValueError("Noise wird erst bei der Ausgabe gemessen.")
         by_id = {r["id"]: r for r in self.rows}
+        self.saturation_enabled = bool(saturation)
+        self.saturation_applied = False
+        if (saturation and mix["lFraction"] is not None and "L" in by_id
+                and by_id["L"].get("saturated") and mix["lFraction"] > SATURATION_TARGET):
+            return self._render_saturation(mix, by_id)
         result = np.zeros_like(by_id[self.rows[0]["id"]]["fitted"], dtype=np.float32)
         for item in mix["weights"]:
             result += np.float32(item["weight"]) * by_id[item["id"]]["fitted"]
         return result
+
+    def _render_saturation(self, mix, by_id):
+        luminance = by_id["L"]["fitted"]
+        clip = float(luminance.max())
+        zone = gaussian_blur((luminance >= 0.98 * clip).astype(np.float32), SATURATION_SIGMA)
+        cut = np.float32(mix["lFraction"] - SATURATION_TARGET) * np.minimum(
+            np.float32(1.0), np.float32(SATURATION_GAIN) * zone)
+        rgb = np.zeros_like(luminance, dtype=np.float32)
+        for item in mix["rgbWeights"]:
+            rgb += np.float32(item["weight"]) * by_id[item["id"]]["fitted"]
+        plain = np.zeros_like(luminance, dtype=np.float32)
+        for item in mix["weights"]:
+            plain += np.float32(item["weight"]) * by_id[item["id"]]["fitted"]
+        corrected = ((np.float32(mix["lFraction"]) - cut) * luminance +
+                     (np.float32(1 - mix["lFraction"]) + cut) * rgb).astype(np.float32)
+        self.saturation_applied = True
+        return np.where(cut > 0, corrected, plain).astype(np.float32)
 
     def protocol(self, mix, sampling):
         lines = [f"Referenz: {self.reference} (Empfehlung: {self.recommended}), Verfahren: LinearFit"]
@@ -126,6 +174,14 @@ class SlumSession:
             lines.append(f"L-Anteil {mix['lFraction'] * 100:.1f}%, "
                          f"RGBLUM-Gewichte ({mix['weightMode']}): " +
                          ", ".join(f"{w['id']} {w['weight'] * 100:.1f}%" for w in mix["rgbWeights"]))
+        if mix["lFraction"] is not None:
+            found = ", ".join(self.saturated_channels()) or "keine"
+            enabled = getattr(self, "saturation_enabled", False)
+            state = ("aus" if not enabled else
+                     f"ein (L-Anteil an gesättigten Sternen {SATURATION_TARGET * 100:.0f} %)"
+                     if self.saturation_applied else "ein, aber L ist nicht gesättigt (keine Änderung)")
+            lines.append(f"Sättigung erkannt: {found}")
+            lines.append(f"Sternrand-Korrektur: {state}")
         lines.append("Endgewichte: " + ", ".join(
             f"{w['id']} {w['weight'] * 100:.2f}%" for w in mix["weights"]))
         return "\n".join(lines)

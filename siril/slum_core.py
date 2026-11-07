@@ -5,6 +5,12 @@ import math
 _ORDER = {"L": 0, "R": 1, "G": 2, "B": 3}
 
 
+# Sternrand-Korrektur: Zielanteil von L, Breite (Sigma, px) und Verstärkung der Zonenmaske.
+SATURATION_TARGET = 0.3
+SATURATION_SIGMA = 6
+SATURATION_GAIN = 4
+
+
 def _is_number(value):
     return isinstance(value, (int, float)) and not isinstance(value, bool) \
         and math.isfinite(value)
@@ -69,8 +75,8 @@ def compute_slum_mix(channels, manual_weights=None, l_fraction=None):
     if not luminance:
         return {"weights": compute_weights(channels, manual_weights), "rgbWeights": None,
                 "lFraction": None, "weightMode": mode}
-    if not _is_number(l_fraction) or l_fraction < 0.5 or l_fraction > 0.8:
-        raise ValueError("L-Anteil muss zwischen 50 und 80 % liegen.")
+    if not _is_number(l_fraction) or l_fraction < 0.2 or l_fraction > 0.8:
+        raise ValueError("L-Anteil muss zwischen 20 und 80 % liegen.")
     colors = [row for row in channels if row["id"] != "L"]
     compute_weights(luminance)
     rgb_weights = compute_weights(colors, manual_weights)
