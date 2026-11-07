@@ -18,3 +18,5 @@ jobs:
         with:
           node-version: '22'
       - run: node --test tests/*.test.cjs
+      - run: python3 scripts/build-release.py v1.0.0
+      - run: python3 -m zipfile -t dist/SLUM-v1.0.0.zip
