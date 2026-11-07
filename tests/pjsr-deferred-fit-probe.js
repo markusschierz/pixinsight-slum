@@ -33,7 +33,7 @@ try {
    report.outTextLn("afterSwitch reference="+session.reference+
       " sameRows="+(session.rows===rows)+
       " noisePending="+rows.every(function(row){return row.noise === undefined}));
-   let result=session.createView({L:"1x1",R:"1x1"},null,true);
+   let result=session.createView({L:"1x1",R:"1x1"},null);
    output=View.viewById(result.viewId).window;
    report.outTextLn("created="+(!output.isNull)+" reference="+session.lastRun.reference+
       " weights="+result.weights.map(function(w){return w.id+":"+w.weight}).join(",")+

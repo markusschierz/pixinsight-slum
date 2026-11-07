@@ -36,7 +36,7 @@ try {
    report.outTextLn("config="+JSON.stringify(dialog.config()));
    dialog.analyze("");
    report.outTextLn("sources="+dialog.session.rows.map(function(row){return row.sourceLabel}).join(";"));
-   report.outTextLn("rgbHint="+dialog.rgbHint.text);
+   report.outTextLn("autoHintHidden="+(!dialog.rgbHint.visible));
    dialog.channels.R.viewList.currentView=alternate.mainView;
    dialog.channels.R.viewList.onViewSelected(alternate.mainView);
    report.outTextLn("afterSourceChange analyzed="+dialog.analyzed+
@@ -48,8 +48,6 @@ try {
    dialog.methodCombo.onItemSelected(2);
    report.outTextLn("oneRGB="+(!dialog.rgbMode.visible)+
       " noManualWeight="+(dialog.manualWeights()===null));
-   dialog.prerequisite.checked=true;
-   dialog.registration.checked=true;
    dialog.refreshSummary();
    report.outTextLn("saveEnabled="+dialog.saveButton.enabled);
    dialog.render().save("/tmp/slum-view-ui-probe.png");

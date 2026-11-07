@@ -23,7 +23,7 @@ try {
    let weights = session.weights({L:"1x1",R:"1x1"},null);
    let expected = weights[0].weight*rows[0].view.image.sample(4000,3000)+
       weights[1].weight*rows[1].view.image.sample(4000,3000);
-   session.create(output,{L:"1x1",R:"1x1"},null,true);
+   session.create(output,{L:"1x1",R:"1x1"},null);
    let result = ImageWindow.open(output)[0];
    report.outTextLn("output="+result.mainView.image.width+"x"+
       result.mainView.image.height+":"+result.bitsPerSample+":"+result.isFloatSample+

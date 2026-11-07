@@ -44,7 +44,7 @@ try{
    report.outTextLn("sampling="+rows.map(function(r){return r.id+":"+r.sampling}).join(","));
    report.outTextLn("weights="+weights.map(function(w){return w.id+":"+w.weight}).join(","));
    report.outTextLn("L="+weights[0].weight+" RGB="+rgb+" sum="+sum);
-   session.create(output,sampling,null,true);
+   session.create(output,sampling,null);
    let result=ImageWindow.open(output)[0];
    report.outTextLn("pixelDifference="+
       Math.abs(expected-result.mainView.image.sample(40,60)));
@@ -56,12 +56,10 @@ try{
    dialog.analyze("");
    dialog.methodCombo.currentItem=2;
    dialog.methodCombo.onItemSelected(2);
-   dialog.prerequisite.checked=true;
-   dialog.registration.checked=true;
    dialog.refreshSummary();
    report.outTextLn("bin3Auto="+(dialog.rgbMode.currentItem===0)+
       " noManualWeight="+(dialog.manualWeights()===null)+
-      " hint="+dialog.lShareHint.text+
+      " autoHintHidden="+(!dialog.rgbHint.visible)+
       " ready="+dialog.saveButton.enabled);
    dialog.render().save("/tmp/pjsr-bin3-ui-probe.png");
    dialog.session.close();

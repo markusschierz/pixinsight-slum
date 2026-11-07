@@ -40,7 +40,7 @@ try {
       return sum+inverse[id]/total*byId[id].view.image.sample(40,60);
    },0);
    let expected=0.7*byId.L.view.image.sample(40,60)+0.3*rgbExpected;
-   let result=session.createView(sampling,null,true);
+   let result=session.createView(sampling,null);
    output=View.viewById(result.viewId).window;
    let w=result.weights;
    let delta=Math.abs(output.mainView.image.sample(40,60)-expected);
@@ -64,7 +64,7 @@ try {
          0.35*manualRows.G.view.image.sample(40,60)+
          0.25*manualRows.B.view.image.sample(40,60));
       let manualResult=manualSession.createView({L:"1x1",R:"1x1",G:"2x2",B:"3x3"},
-         {R:0.4,G:0.35,B:0.25},true);
+         {R:0.4,G:0.35,B:0.25});
       manualOutput=View.viewById(manualResult.viewId).window;
       report.outTextLn("manualWeights="+manualResult.weights.map(function(w){
          return w.id+":"+w.weight;
@@ -90,8 +90,6 @@ try {
       dialog.methodCombo.currentItem=2;
       dialog.methodCombo.onItemSelected(2);
       let analyzedRows=dialog.session.rows;
-      dialog.prerequisite.checked=true;
-      dialog.registration.checked=true;
       dialog.refreshSummary();
       report.outTextLn("autoMode="+(dialog.rgbMode.currentItem===0)+
          " ready="+dialog.saveButton.enabled+
@@ -100,7 +98,7 @@ try {
          " mixReport="+(dialog.report.text.indexOf("SLUM = 70% L + 30% RGBLUM")>=0));
       dialog.render().save("/tmp/pjsr-rgblum-mixed-probe.png");
       dialog.channels.B.sampling.text="3x3";
-      report.outTextLn("bin3Hint="+(dialog.rgbHint.text.indexOf("Heuristik")>=0)+
+      report.outTextLn("autoHintHidden="+(!dialog.rgbHint.visible)+
          " autoReady="+dialog.saveButton.enabled+
          " sameAnalysis="+(dialog.session.rows===analyzedRows));
       dialog.rgbMode.currentItem=1;
@@ -113,8 +111,7 @@ try {
       let manual=dialog.manualWeights();
       report.outTextLn("manual="+[manual.R,manual.G,manual.B].join(",")+
          " ready="+dialog.saveButton.enabled+
-         " computed="+dialog.manualFields.B.computed.text+
-         " hint="+dialog.lShareHint.text);
+         " computed="+dialog.manualFields.B.computed.text);
       dialog.render().save("/tmp/pjsr-rgblum-three-groups.png");
       dialog.manualFields.R.edit.text="80";
       dialog.manualFields.G.edit.text="40";
