@@ -5,6 +5,12 @@ import math
 _ORDER = {"L": 0, "R": 1, "G": 2, "B": 3}
 
 
+# Sternrand-Korrektur: Zielanteil von L, Breite (Sigma, px) und Verstärkung der Zonenmaske.
+SATURATION_TARGET = 0.3
+SATURATION_SIGMA = 6
+SATURATION_GAIN = 4
+
+
 def _is_number(value):
     return isinstance(value, (int, float)) and not isinstance(value, bool) \
         and math.isfinite(value)

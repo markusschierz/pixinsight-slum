@@ -1,6 +1,6 @@
 # Spezifikation: Behandlung gesättigter Sternränder (abschaltbar)
 
-**Status:** ENTWURF zur Freigabe. Führendes [Issue #26](https://github.com/markusschierz/pixinsight-slum/issues/26). Ergänzt [SPEC-SPFC.md](SPEC-SPFC.md) und [SPEC-RGBLUM.md](SPEC-RGBLUM.md); alle dortigen Regeln gelten weiter.
+**Status:** UMGESETZT (Verfahren A, Zonengewichtung über geglättete Sättigungsmaske). Siehe Abschnitt 8. Führendes [Issue #26](https://github.com/markusschierz/pixinsight-slum/issues/26). Ergänzt [SPEC-SPFC.md](SPEC-SPFC.md) und [SPEC-RGBLUM.md](SPEC-RGBLUM.md); alle dortigen Regeln gelten weiter.
 
 ## 1. Ausgangslage (gemessen, nicht vermutet)
 
@@ -84,3 +84,12 @@ Der Nutzer kann im Dialog eine **Sternrand-Korrektur** ein- und ausschalten. **A
 1. Was genau ist der Ring (Phase 0)?
 2. Soll die Option den Namen „Gesättigte Sternränder korrigieren“ behalten?
 3. Soll später der Standard auf „an“ wechseln, wenn die Messung überzeugt?
+
+## 8. Umsetzung und Messung
+
+- Phase 0: Vergleichsbilder zeigen eine zu große weiße Scheibe bei hohem L-Anteil, keinen Donut.
+- Verfahren A per Pixel (L/RGB-Verhältnis, RGB-Niveau) ergab dunkle Kernlöcher (Kern 0,47 des Peaks) und wurde verworfen. Ursache: RGB-Kerne sind in den Daten selbst donutförmig.
+- Umgesetzt: Maske der gesättigten L-Pixel (≥ 98 % des Clip-Niveaus), Gauß σ = 6 px, Verstärkung 4, gekappt bei 1. L-Anteil = a − (a − 30 %) · Maske. Profile der drei Teststerne fallen monoton nach außen; Hintergrund ist bitgleich.
+- Messprobe: `tests/pjsr-saturation-probe.js`, UI-Probe `tests/pjsr-saturation-ui-probe.js`. Siril: gleiche Parameter in `siril/slum_engine.py`.
+- Abweichung vom Entwurf: Die Statuszeile „Sättigung erkannt“ steht im Protokoll statt im Dialog, weil die Sättigung erst bei der Normalisierung bekannt ist.
+- Offen: Standard bleibt **aus**; Wirkung bitte an eigenen Daten prüfen.
