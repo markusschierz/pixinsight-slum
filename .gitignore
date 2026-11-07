@@ -1,5 +1,6 @@
 # Astronomische Eingabe- und Ausgabebilder bleiben außerhalb des Quell-Repositories.
 sample-data/
+flux-samples/
 *.xisf
 *.fit
 *.fits

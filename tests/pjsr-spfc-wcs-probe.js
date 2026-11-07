@@ -1,7 +1,7 @@
 #engine v8
 let report=new File;
 report.createForWriting("/tmp/pjsr-spfc-wcs-probe.txt");
-let root="/home/markus/Nextcloud/Documents/_devleopment/pixsinsight-slum/flux-samples/";
+let root=(getEnvironmentVariable("SLUM_ROOT") || ".") + "/flux-samples/";
 try {
    for(let id of ["L","R","G","B"]){
       let w=ImageWindow.open(root+id+"_FLUX.xisf")[0];

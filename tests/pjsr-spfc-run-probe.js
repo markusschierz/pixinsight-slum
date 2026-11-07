@@ -5,7 +5,7 @@
 #include "../src/slum-engine.js"
 let report = new File;
 report.createForWriting("/tmp/pjsr-spfc-run-probe.txt");
-let root = "/home/markus/Nextcloud/Documents/_devleopment/pixsinsight-slum/flux-samples/";
+let root = (getEnvironmentVariable("SLUM_ROOT") || ".") + "/flux-samples/";
 let session = new SlumSession;
 let output = null;
 let original = null;
