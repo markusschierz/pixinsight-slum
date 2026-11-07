@@ -66,3 +66,10 @@ Python 3, PEP 8, reine Funktionen im Kern, Fehler als `ValueError` mit deutschen
 1. Ist Siril lokal installiert (zum echten Test)? Wenn nicht, bleibt der Siril-Teil ohne Laufzeittest und wird als solcher gekennzeichnet.
 2. Soll der Siril-Code im selben Repo liegen (Vorschlag) oder in einem eigenen?
 3. Ein gemeinsames Release v1.1.0, wie angenommen?
+
+## Umsetzungsstand (v1.1.0)
+
+- Ausgabe: neue FITS-Datei, optional in Siril öffnen (kein direktes Überschreiben des geladenen Bildes).
+- Rauschen: Starlet-MRS-Schätzung durch Sn-Skala normalisiert; absolute Werte weichen von PixInsight ab, Gewichte sind relativ.
+- Integrationsproben laufen headless im Siril-Pipe-Modus (`siril -p`, `pyscript`).
+- Offene Fragen mit Standardannahmen entschieden: gleiches Repo, gemeinsames Release v1.1.0, kein SPFC.
