@@ -652,6 +652,10 @@ class SlumDialog extends Dialog {
       lines.push("Endgewichte: " + run.weights.map(function(w) {
          return w.id + " " + (100 * w.weight).toFixed(3) + "%";
       }).join("   "));
+      var clipped = run.rows.filter(function (r) { return r.clipLevel > 0; });
+      if (clipped.length)
+         lines.push("Sättigung erkannt in " + clipped.map(function (r) { return r.id; }).join(", ") +
+            ": gesättigte Sternkerne werden dort ausgeblendet, Gewichte pro Pixel neu normiert.");
       this.report.text += "\n" + lines.join("\n");
    }
 

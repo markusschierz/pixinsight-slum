@@ -102,3 +102,15 @@ test('manual R/G/B weights override noise only inside RGBLUM', () => {
   assert.equal(automatic.weightMode, 'auto');
   assert.ok(Math.abs(automatic.weights[1].weight - 0.3 / 2.25) < 1e-12);
 });
+
+const { buildSlumExpression } = require('../src/slum-core.js');
+test('mix expression without clipping is the plain weighted sum', () => {
+  const e = buildSlumExpression([{ viewId: 'A', weight: 0.5, clip: 0 }, { viewId: 'B', weight: 0.5, clip: 0 }]);
+  assert.equal(e, '(0.50000000000000000*A)+(0.50000000000000000*B)');
+});
+test('mix expression with clipping renormalises per pixel', () => {
+  const e = buildSlumExpression([{ viewId: 'L', weight: 0.66, clip: 1.2 }, { viewId: 'R', weight: 0.34, clip: 0 }]);
+  assert.match(e, /^\(.*\)\/\(.*\)$/);
+  assert.match(e, /min\(1,max\(0,\(L\/1\.2/);
+  assert.ok(!e.includes('R/'));
+});
