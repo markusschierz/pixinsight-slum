@@ -5,7 +5,7 @@
 #include "../src/slum-engine.js"
 let report = new File;
 report.createForWriting("/tmp/pjsr-real-view-probe.txt");
-let root = "/home/markus/Nextcloud/Documents/_devleopment/pixsinsight-slum/sample-data/";
+let root = (getEnvironmentVariable("SLUM_ROOT") || ".") + "/sample-data/";
 let output = "/tmp/slum-real-view-probe.xisf";
 let original = null;
 let session = new SlumSession;

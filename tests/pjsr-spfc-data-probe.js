@@ -1,7 +1,7 @@
 #engine v8
 let report = new File;
 report.createForWriting("/tmp/pjsr-spfc-data-probe.txt");
-let root = "/home/markus/Nextcloud/Documents/_devleopment/pixsinsight-slum/";
+let root = (getEnvironmentVariable("SLUM_ROOT") || ".") + "/";
 try {
    for (let id of ["L", "R", "G", "B"]) {
       let raw = ImageWindow.open(root + "sample-data/" + id + ".fit")[0];

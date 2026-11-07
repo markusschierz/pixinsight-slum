@@ -6,7 +6,7 @@
 #include "../src/slum-ui.js"
 let report=new File;
 report.createForWriting("/tmp/pjsr-spfc-ui-probe.txt");
-let root="/home/markus/Nextcloud/Documents/_devleopment/pixsinsight-slum/";
+let root=(getEnvironmentVariable("SLUM_ROOT") || ".") + "/";
 let d=new SlumDialog;
 try {
    d.channels.L.path.text=root+"flux-samples/L_FLUX.xisf";
